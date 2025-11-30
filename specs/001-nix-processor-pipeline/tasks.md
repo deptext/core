@@ -27,10 +27,10 @@ Based on plan.md:
 
 **Purpose**: Project initialization and Nix flake structure
 
-- [ ] T001 Create flake.nix with nixpkgs and flake-utils inputs at flake.nix
-- [ ] T002 Create lib/default.nix exporting all library functions
-- [ ] T003 [P] Create lib/utils/validate.nix with URL normalization helpers
-- [ ] T004 [P] Create empty directory structure for lib/processors/, lib/languages/, examples/, tests/
+- [x] T001 Create flake.nix with nixpkgs and flake-utils inputs at flake.nix
+- [x] T002 Create lib/default.nix exporting all library functions
+- [x] T003 [P] Create lib/utils/validate.nix with URL normalization helpers
+- [x] T004 [P] Create empty directory structure for lib/processors/, lib/languages/, examples/, tests/
 
 ---
 
@@ -40,9 +40,9 @@ Based on plan.md:
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T005 Create lib/processors/source-download.nix with fetchFromGitHub wrapper and URL validation against metadata.json
-- [ ] T006 Create lib/processors/stats.nix that counts files in source directory and outputs stats.json
-- [ ] T007 Create lib/utils/persist.nix with logic to copy processor outputs when persist=true
+- [x] T005 Create lib/processors/source-download.nix with fetchFromGitHub wrapper and URL validation against metadata.json
+- [x] T006 Create lib/processors/stats.nix that counts files in source directory and outputs stats.json
+- [x] T007 Create lib/utils/persist.nix with logic to copy processor outputs when persist=true
 
 **Checkpoint**: Foundational processors ready - language-specific work can begin
 
@@ -56,12 +56,12 @@ Based on plan.md:
 
 ### Implementation for User Story 1
 
-- [ ] T008 [US1] Create lib/processors/package-download/rust.nix that fetches from crates.io and outputs package/ + metadata.json
-- [ ] T009 [US1] Create lib/languages/rust.nix with mkRustPackage helper that wires package-download → source-download → stats
-- [ ] T010 [US1] Update lib/default.nix to export mkRustPackage function
-- [ ] T011 [US1] Update flake.nix to expose lib.mkRustPackage via outputs.lib
-- [ ] T012 [US1] Create examples/rust/serde/seed.nix with serde 1.0.228 package metadata and hashes
-- [ ] T013 [US1] Create tests/integration/test-rust-seed.sh that builds serde seed and validates stats.json output
+- [x] T008 [US1] Create lib/processors/package-download/rust.nix that fetches from crates.io and outputs package/ + metadata.json
+- [x] T009 [US1] Create lib/languages/rust.nix with mkRustPackage helper that wires package-download → source-download → stats
+- [x] T010 [US1] Update lib/default.nix to export mkRustPackage function
+- [x] T011 [US1] Update flake.nix to expose lib.mkRustPackage via outputs.lib
+- [x] T012 [US1] Create examples/rust/serde/seed.nix with serde 1.0.228 package metadata and hashes
+- [x] T013 [US1] Create tests/integration/test-rust-seed.sh that builds serde seed and validates stats.json output
 
 **Checkpoint**: User Story 1 complete - Rust packages can be germinated end-to-end
 
@@ -75,12 +75,12 @@ Based on plan.md:
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Create lib/processors/package-download/python.nix that fetches from PyPI and outputs package/ + metadata.json
-- [ ] T015 [US2] Create lib/languages/python.nix with mkPythonPackage helper that wires package-download → source-download → stats
-- [ ] T016 [US2] Update lib/default.nix to export mkPythonPackage function
-- [ ] T017 [US2] Update flake.nix to expose lib.mkPythonPackage via outputs.lib
-- [ ] T018 [US2] Create examples/python/requests/seed.nix with requests 2.31.0 package metadata and hashes
-- [ ] T019 [US2] Create tests/integration/test-python-seed.sh that builds requests seed and validates stats.json output
+- [x] T014 [US2] Create lib/processors/package-download/python.nix that fetches from PyPI and outputs package/ + metadata.json
+- [x] T015 [US2] Create lib/languages/python.nix with mkPythonPackage helper that wires package-download → source-download → stats
+- [x] T016 [US2] Update lib/default.nix to export mkPythonPackage function
+- [x] T017 [US2] Update flake.nix to expose lib.mkPythonPackage via outputs.lib
+- [x] T018 [US2] Create examples/python/requests/seed.nix with requests 2.31.0 package metadata and hashes
+- [x] T019 [US2] Create tests/integration/test-python-seed.sh that builds requests seed and validates stats.json output
 
 **Checkpoint**: User Story 2 complete - Python packages can be germinated end-to-end
 
@@ -94,14 +94,14 @@ Based on plan.md:
 
 ### Implementation for User Story 3
 
-- [ ] T020 [US3] Update lib/languages/rust.nix to accept optional processors config with enabled/persist flags
-- [ ] T021 [US3] Update lib/languages/python.nix to accept optional processors config with enabled/persist flags
-- [ ] T022 [US3] Update lib/processors/package-download/rust.nix to respect enabled and persist flags
-- [ ] T023 [US3] Update lib/processors/package-download/python.nix to respect enabled and persist flags
-- [ ] T024 [US3] Update lib/processors/source-download.nix to respect enabled and persist flags
-- [ ] T025 [US3] Update lib/processors/stats.nix to respect enabled flag (persist defaults to true)
-- [ ] T026 [US3] Create examples/rust/serde-custom/seed.nix with custom processor configuration (package-download persist=true)
-- [ ] T027 [US3] Update tests/integration/test-rust-seed.sh to also test custom configuration seed
+- [x] T020 [US3] Update lib/languages/rust.nix to accept optional processors config with enabled/persist flags
+- [x] T021 [US3] Update lib/languages/python.nix to accept optional processors config with enabled/persist flags
+- [x] T022 [US3] Update lib/processors/package-download/rust.nix to respect enabled and persist flags
+- [x] T023 [US3] Update lib/processors/package-download/python.nix to respect enabled and persist flags
+- [x] T024 [US3] Update lib/processors/source-download.nix to respect enabled and persist flags
+- [x] T025 [US3] Update lib/processors/stats.nix to respect enabled flag (persist defaults to true)
+- [x] T026 [US3] Create examples/rust/serde-custom/seed.nix with custom processor configuration (package-download persist=true)
+- [x] T027 [US3] Update tests/integration/test-rust-seed.sh to also test custom configuration seed
 
 **Checkpoint**: User Story 3 complete - Processors can be configured per-seed
 
@@ -111,12 +111,12 @@ Based on plan.md:
 
 **Purpose**: Final validation and documentation
 
-- [ ] T028 [P] Add extensive beginner-friendly comments to flake.nix explaining flake concepts
-- [ ] T029 [P] Add extensive beginner-friendly comments to lib/default.nix explaining library exports
-- [ ] T030 [P] Add extensive beginner-friendly comments to all processor files explaining derivation concepts
-- [ ] T031 [P] Add extensive beginner-friendly comments to language helper files explaining the pipeline
-- [ ] T032 Run full integration test suite: tests/integration/test-rust-seed.sh and tests/integration/test-python-seed.sh
-- [ ] T033 Validate quickstart.md examples work end-to-end with actual nix build commands
+- [x] T028 [P] Add extensive beginner-friendly comments to flake.nix explaining flake concepts
+- [x] T029 [P] Add extensive beginner-friendly comments to lib/default.nix explaining library exports
+- [x] T030 [P] Add extensive beginner-friendly comments to all processor files explaining derivation concepts
+- [x] T031 [P] Add extensive beginner-friendly comments to language helper files explaining the pipeline
+- [x] T032 Run full integration test suite: tests/integration/test-rust-seed.sh and tests/integration/test-python-seed.sh
+- [x] T033 Validate quickstart.md examples work end-to-end with actual nix build commands
 
 ---
 
