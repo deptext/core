@@ -1,0 +1,5 @@
+[tools]
+
+[env]
+# add node modules and uv installed binaries to the local path
+_.path = ["{{env.HOME}}/.local/bin"]
