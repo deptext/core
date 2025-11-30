@@ -1,0 +1,104 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deptext.dev/schemas/metadata-rust.json",
+  "title": "Rust Package Metadata",
+  "description": "Metadata extracted from crates.io API (output of package-download processor)",
+  "type": "object",
+  "required": ["name", "version", "_deptext"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Crate name"
+    },
+    "version": {
+      "type": "string",
+      "description": "Crate version"
+    },
+    "description": {
+      "type": ["string", "null"],
+      "description": "Crate description"
+    },
+    "repository": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "Repository URL (used for validation against seed config)"
+    },
+    "homepage": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "Homepage URL"
+    },
+    "documentation": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "Documentation URL"
+    },
+    "license": {
+      "type": ["string", "null"],
+      "description": "SPDX license expression"
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Crate keywords"
+    },
+    "categories": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Crate categories"
+    },
+    "authors": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Crate authors"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the crate was first published"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this version was published"
+    },
+    "downloads": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total downloads"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "version_req": { "type": "string" },
+          "optional": { "type": "boolean" },
+          "kind": { "type": "string", "enum": ["normal", "dev", "build"] }
+        }
+      },
+      "description": "Crate dependencies"
+    },
+    "_deptext": {
+      "type": "object",
+      "required": ["registry", "language", "fetched_at"],
+      "properties": {
+        "registry": {
+          "type": "string",
+          "const": "crates.io"
+        },
+        "language": {
+          "type": "string",
+          "const": "rust"
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this metadata was fetched"
+        }
+      },
+      "description": "DepText-specific metadata"
+    }
+  }
+}

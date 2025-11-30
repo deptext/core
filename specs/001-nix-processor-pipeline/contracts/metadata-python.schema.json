@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deptext.dev/schemas/metadata-python.json",
+  "title": "Python Package Metadata",
+  "description": "Metadata extracted from PyPI API (output of package-download processor)",
+  "type": "object",
+  "required": ["name", "version", "_deptext"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Package name"
+    },
+    "version": {
+      "type": "string",
+      "description": "Package version"
+    },
+    "summary": {
+      "type": ["string", "null"],
+      "description": "Short package description"
+    },
+    "home_page": {
+      "type": ["string", "null"],
+      "format": "uri",
+      "description": "Homepage URL"
+    },
+    "project_urls": {
+      "type": ["object", "null"],
+      "additionalProperties": { "type": "string" },
+      "description": "Project URLs including Source repository"
+    },
+    "license": {
+      "type": ["string", "null"],
+      "description": "License name"
+    },
+    "keywords": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Package keywords (may be comma-separated string in source)"
+    },
+    "author": {
+      "type": ["string", "null"],
+      "description": "Package author"
+    },
+    "author_email": {
+      "type": ["string", "null"],
+      "format": "email",
+      "description": "Author email"
+    },
+    "requires_python": {
+      "type": ["string", "null"],
+      "description": "Python version requirement"
+    },
+    "requires_dist": {
+      "type": ["array", "null"],
+      "items": { "type": "string" },
+      "description": "Package dependencies as PEP 508 strings"
+    },
+    "_deptext": {
+      "type": "object",
+      "required": ["registry", "language", "fetched_at"],
+      "properties": {
+        "registry": {
+          "type": "string",
+          "const": "pypi"
+        },
+        "language": {
+          "type": "string",
+          "const": "python"
+        },
+        "fetched_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When this metadata was fetched"
+        }
+      },
+      "description": "DepText-specific metadata"
+    }
+  }
+}

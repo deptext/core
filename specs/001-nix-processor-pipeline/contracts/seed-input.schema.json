@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deptext.dev/schemas/seed-input.json",
+  "title": "Seed Input",
+  "description": "Configuration passed to language helpers (mkRustPackage, mkPythonPackage)",
+  "type": "object",
+  "required": ["name", "version", "github", "hashes"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Package name in the registry (crates.io or PyPI)"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Package version string"
+    },
+    "github": {
+      "type": "object",
+      "required": ["owner", "repo", "rev"],
+      "properties": {
+        "owner": {
+          "type": "string",
+          "minLength": 1,
+          "description": "GitHub repository owner"
+        },
+        "repo": {
+          "type": "string",
+          "minLength": 1,
+          "description": "GitHub repository name"
+        },
+        "rev": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Git revision (tag like v1.0.0 or commit SHA)"
+        }
+      }
+    },
+    "hashes": {
+      "type": "object",
+      "required": ["package", "source"],
+      "properties": {
+        "package": {
+          "type": "string",
+          "pattern": "^sha256-[A-Za-z0-9+/=]{43,44}$",
+          "description": "SHA256 hash of the package tarball from registry"
+        },
+        "source": {
+          "type": "string",
+          "pattern": "^sha256-[A-Za-z0-9+/=]{43,44}$",
+          "description": "SHA256 hash of the GitHub source archive"
+        }
+      }
+    },
+    "processors": {
+      "type": "object",
+      "description": "Optional per-processor configuration",
+      "properties": {
+        "package-download": {
+          "$ref": "#/definitions/processorConfig"
+        },
+        "source-download": {
+          "$ref": "#/definitions/processorConfig"
+        },
+        "stats": {
+          "$ref": "#/definitions/processorConfig"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "processorConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether to run this processor"
+        },
+        "persist": {
+          "type": "boolean",
+          "description": "Whether to copy output to seed directory"
+        }
+      }
+    }
+  }
+}
