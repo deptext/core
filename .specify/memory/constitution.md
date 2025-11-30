@@ -1,50 +1,36 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+## Coding Conventions
 
-## Core Principles
+### IMPORTANT: High level rules (all languages)
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+This is a new and modern (2025) project being built by passionate experts with lots of resources.
+- NEVER over engineer the solution (keep code as simple as possible).
+- MUST write code which is easy to understand and maintain (do not optimize for performance).
+- NEVER create code debt (take your time and clean up as you go).
+- NEVER maintain backwards compatibility or add any deprecation notices (this is a new project).
+- NEVER over engineer the solution (keep code simple, no scope creep).
+- ALWAYS write extremely modular code (makes code easier to understand and allows the project to grow in complexity over time).
+- ALWAYS write code for ONLY the most modern version of browsers, tools and hardware (we control all the deployment targets).
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### IMPORTANT: Code Comments (all languages)
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+All code MUST include extensive, beginner-friendly comments:
+- MUST explain both WHAT the code does and WHY it's doing it
+- MUST define all jargon and technical terms in plain English
+- MUST be written as if explaining to a 16-year-old with no programming experience
+- NEVER assume the reader knows the language, framework, or domain concepts
+- When in doubt, add MORE comments - over-explaining is better than under-explaining
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Example of good commenting style:
+```nix
+# A "derivation" is Nix's word for a build recipe - it describes how to
+# create something (like compiled code or documentation) from source files.
+# Think of it like a cooking recipe: it lists ingredients (inputs) and
+# steps (build commands) to produce a dish (output).
+mkDerivation {
+  # "pname" means "package name" - the human-readable name for this software
+  pname = "my-package";
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
-
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
-
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
-
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
-
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+  # The version number helps us track which release this is
+  version = "1.0.0";
+}
+```
