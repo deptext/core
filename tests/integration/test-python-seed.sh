@@ -64,8 +64,9 @@ else
   exit 1
 fi
 
-# The store path is on the last line of stdout
-STORE_PATH=$(tail -1 build_output.txt)
+# The store path is the line starting with /nix/store in stdout
+# We need to strip ANSI color codes and find the Nix store path
+STORE_PATH=$(grep -E "^/nix/store/" build_output.txt | head -1)
 rm -f build_output.txt build_stderr.txt
 log_info "Build output: $STORE_PATH"
 

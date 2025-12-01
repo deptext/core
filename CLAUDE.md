@@ -7,6 +7,7 @@ Auto-generated from all feature plans. Last updated: 2025-11-30
 - N/A (artifacts stored in git) (002-github-action-bloom)
 - Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins, jq for JSON processing, coreutils for file operations, findutils for directory scanning (003-finalize-processor)
 - Nix store for processor I/O; filesystem for persisted bloom outputs (003-finalize-processor)
+- Nix (flakes-enabled, requires Nix 2.4+), Rust nightly (for rustdoc JSON output) + rustdoc (nightly), cargo-doc-md crate, existing mkProcessor factory (004-rustdoc-processors)
 
 - Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins (fetchurl, fetchFromGitHub), jq for JSON processing, coreutils for file operations (001-nix-processor-pipeline)
 
@@ -24,12 +25,7 @@ tests/
 ## Code Style
 
 Nix (flakes-enabled, requires Nix 2.4+): Follow standard conventions
-
-## Recent Changes
-- 003-finalize-processor: Added Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins, jq for JSON processing, coreutils for file operations, findutils for directory scanning
-- 002-github-action-bloom: Added YAML (GitHub Actions), Bash (shell scripts) + cachix/install-nix-action (Nix installer), actions/checkout, GitHub CLI (gh)
-
-- 001-nix-processor-pipeline: Added Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins (fetchurl, fetchFromGitHub), jq for JSON processing, coreutils for file operations
+We are using Nix to build a DSL for defining dependency analysis pipelines. Reproducibility is not a goal since some processors call LLMs, which are non-deterministic.
 
 ## Coding Conventions
 

@@ -21,7 +21,8 @@
 # at the root level, not in a finalize/ folder).
 #
 # INPUTS:
-# - All upstream processor derivations (package-download, source-download, stats)
+# - All upstream processor derivations (package-download, source-download, stats,
+#   and optionally rustdoc-json, rustdoc-md for Rust packages)
 # - Package metadata (pname, version, language, github info, hash)
 #
 # OUTPUTS:
@@ -50,7 +51,8 @@ in
   #   hash          - Package content hash from registry
   #   github        - GitHub repository info: { owner, repo, rev, hash }
   #   processors    - Attribute set of upstream processor derivations
-  #                   { package-download = <drv>; source-download = <drv>; stats = <drv>; }
+  #                   { package-download = <drv>; source-download = <drv>; stats = <drv>;
+  #                     rustdoc-json = <drv>; rustdoc-md = <drv>; } (Rust only)
   #   processorConfig - Configuration for each processor (enabled, persist)
   #
   # RETURNS:
@@ -142,7 +144,8 @@ in
 
         # Process each upstream processor
         # We iterate over a known list to maintain consistent ordering
-        for proc_name in package-download source-download stats; do
+        # The list includes optional rustdoc processors which may not exist for all languages
+        for proc_name in package-download source-download stats rustdoc-json rustdoc-md; do
           case "$proc_name" in
             "package-download")
               proc_drv="${processors.package-download}"
@@ -158,6 +161,22 @@ in
               proc_drv="${processors.stats}"
               proc_enabled="${if processorConfig.stats.enabled or true then "true" else "false"}"
               proc_persist="${if processorConfig.stats.persist or true then "true" else "false"}"
+              ;;
+            "rustdoc-json")
+              # Rustdoc-json is optional (only for Rust packages with nightly toolchain)
+              proc_drv="${processors.rustdoc-json or ""}"
+              proc_enabled="${if (processorConfig.rustdoc-json.enabled or false) then "true" else "false"}"
+              proc_persist="${if (processorConfig.rustdoc-json.persist or false) then "true" else "false"}"
+              # Skip if processor doesn't exist
+              if [ -z "$proc_drv" ]; then continue; fi
+              ;;
+            "rustdoc-md")
+              # Rustdoc-md is optional (only for Rust packages with nightly toolchain)
+              proc_drv="${processors.rustdoc-md or ""}"
+              proc_enabled="${if (processorConfig.rustdoc-md.enabled or false) then "true" else "false"}"
+              proc_persist="${if (processorConfig.rustdoc-md.persist or true) then "true" else "false"}"
+              # Skip if processor doesn't exist
+              if [ -z "$proc_drv" ]; then continue; fi
               ;;
           esac
 

@@ -29,7 +29,8 @@
 
 let
   # Import processor modules
-  packageDownloadPython = import ../processors/package-download/python.nix { inherit lib; };
+  # Python-specific processors are now in processors/python/
+  packageDownloadPython = import ../processors/python/package-download.nix { inherit lib; };
   sourceDownload = import ../processors/source-download.nix { inherit lib; };
   stats = import ../processors/stats.nix { inherit lib; };
   finalize = import ../processors/finalize.nix { inherit lib; };

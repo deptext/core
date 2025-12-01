@@ -7,11 +7,13 @@
 # 1. package-download: Fetches the crate from crates.io, gets metadata
 # 2. source-download: Fetches source from GitHub, validates URL
 # 3. stats: Counts files and generates statistics
-# 4. finalize: Generates README.md and bloom.json summaries
+# 4. rustdoc-json: Generates JSON documentation using rustdoc (nightly)
+# 5. rustdoc-md: Converts rustdoc JSON to Markdown documentation
+# 6. finalize: Generates README.md and bloom.json summaries
 #
 # Each step is a separate Nix derivation. Nix automatically:
 # - Builds them in the correct order (respecting dependencies)
-# - Runs independent steps in parallel
+# - Runs independent steps in parallel (stats runs parallel to rustdoc chain)
 # - Caches successful builds
 #
 # USAGE:
@@ -19,6 +21,7 @@
 #     deptext = builtins.getFlake "github:deptext/core";
 #     result = deptext.lib.mkRustPackage {
 #       pkgs = nixpkgs.legacyPackages.x86_64-linux;
+#       rustToolchain = fenix.packages.x86_64-linux.minimal.toolchain;
 #       name = "serde";
 #       version = "1.0.228";
 #       github = { owner = "serde-rs"; repo = "serde"; rev = "v1.0.228"; };
@@ -31,9 +34,13 @@
 
 let
   # Import processor modules
-  packageDownloadRust = import ../processors/package-download/rust.nix { inherit lib; };
+  # Rust-specific processors are now in processors/rust/
+  packageDownloadRust = import ../processors/rust/package-download.nix { inherit lib; };
   sourceDownload = import ../processors/source-download.nix { inherit lib; };
   stats = import ../processors/stats.nix { inherit lib; };
+  # NEW: Rustdoc processors for documentation generation
+  rustdocJson = import ../processors/rust/rustdoc-json.nix { inherit lib; };
+  rustdocMd = import ../processors/rust/rustdoc-md.nix { inherit lib; };
   finalize = import ../processors/finalize.nix { inherit lib; };
   persist = import ../utils/persist.nix { inherit lib; };
 in
@@ -56,14 +63,18 @@ in
     , processors ? {}
     }:
     let
+
       # Merge user-provided processor config with defaults
       # lib.recursiveUpdate does a deep merge of attribute sets
       processorConfig = lib.recursiveUpdate {
         # Default configuration for each processor
         package-download = { enabled = true; persist = false; };
         source-download = { enabled = true; persist = false; };
-        stats = { enabled = true; persist = true; };  # stats persists by default
-        finalize = { enabled = true; persist = true; };  # finalize always persists
+        stats = { enabled = true; persist = true; };
+        # Rustdoc processors for documentation generation (enabled by default)
+        rustdoc-json = { enabled = true; persist = false; };
+        rustdoc-md = { enabled = true; persist = true; };
+        finalize = { enabled = true; persist = true; };
       } processors;
 
       # STEP 1: Package Download
@@ -92,14 +103,36 @@ in
         config = processorConfig.stats;
       };
 
+      # STEP 4: Rustdoc JSON
+      # Generates JSON documentation from Rust source using rustdoc --output-format json
+      # This runs in parallel with stats (both depend only on source-download)
+      rustdocJsonDrv = rustdocJson.mkRustdocJson {
+        inherit pkgs version;
+        name = pname;
+        sourceDownload = sourceDownloadDrv;
+        config = processorConfig.rustdoc-json;
+      };
+
+      # STEP 5: Rustdoc Markdown
+      # Converts rustdoc JSON to human-readable Markdown documentation
+      rustdocMdDrv = rustdocMd.mkRustdocMd {
+        inherit pkgs version;
+        name = pname;
+        rustdocJson = rustdocJsonDrv;
+        config = processorConfig.rustdoc-md;
+      };
+
       # Collect upstream processor derivations (for finalize to read)
       upstreamProcessors = {
         package-download = packageDownloadDrv;
         source-download = sourceDownloadDrv;
         stats = statsDrv;
+        # NEW: Include rustdoc processors
+        rustdoc-json = rustdocJsonDrv;
+        rustdoc-md = rustdocMdDrv;
       };
 
-      # STEP 4: Finalize
+      # STEP 6: Finalize
       # Generates README.md and bloom.json after all other processors complete
       finalizeDrv = finalize.mkFinalize {
         inherit pkgs pname version github hash;

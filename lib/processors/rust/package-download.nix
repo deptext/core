@@ -22,6 +22,7 @@
 
 let
   # Import the processor factory which handles timing injection
+  # Note: We use ../../default.nix because this file is now in processors/rust/
   processorFactory = import ../default.nix { inherit lib; };
 in
 {

@@ -72,8 +72,9 @@ else
   exit 1
 fi
 
-# The store path is on the last line of stdout
-STORE_PATH=$(tail -1 build_output.txt)
+# The store path is the line starting with /nix/store in stdout
+# We need to strip ANSI color codes and find the Nix store path
+STORE_PATH=$(grep -E "^/nix/store/" build_output.txt | head -1)
 rm -f build_output.txt build_stderr.txt
 log_info "Build output: $STORE_PATH"
 
@@ -205,10 +206,36 @@ if command -v jq &> /dev/null; then
     exit 1
   fi
 
-  if [ "$BLOOM_PROCESSORS" -ge 3 ]; then
+  if [ "$BLOOM_PROCESSORS" -ge 5 ]; then
     log_success "bloom.json has $BLOOM_PROCESSORS processors"
   else
-    log_fail "bloom.json should have at least 3 processors, got $BLOOM_PROCESSORS"
+    log_fail "bloom.json should have at least 5 processors (including rustdoc-json and rustdoc-md), got $BLOOM_PROCESSORS"
+    exit 1
+  fi
+
+  # Test 5.4: Verify rustdoc processors are present in bloom.json (even if disabled)
+  log_info "Test 5.4: Checking for rustdoc processors in bloom.json..."
+  RUSTDOC_JSON_PRESENT=$(jq -r '.processors | has("rustdoc-json")' "$BLOOM_FILE" 2>/dev/null)
+  RUSTDOC_MD_PRESENT=$(jq -r '.processors | has("rustdoc-md")' "$BLOOM_FILE" 2>/dev/null)
+
+  if [ "$RUSTDOC_JSON_PRESENT" = "true" ]; then
+    log_success "rustdoc-json processor is present in bloom.json"
+    # Check if it's disabled (expected when no rustToolchain provided)
+    RUSTDOC_JSON_ACTIVE=$(jq -r '.processors["rustdoc-json"].active' "$BLOOM_FILE" 2>/dev/null)
+    if [ "$RUSTDOC_JSON_ACTIVE" = "false" ]; then
+      log_success "rustdoc-json is inactive (expected without rustToolchain)"
+    else
+      log_info "rustdoc-json is active (rustToolchain was provided)"
+    fi
+  else
+    log_fail "rustdoc-json processor not found in bloom.json"
+    exit 1
+  fi
+
+  if [ "$RUSTDOC_MD_PRESENT" = "true" ]; then
+    log_success "rustdoc-md processor is present in bloom.json"
+  else
+    log_fail "rustdoc-md processor not found in bloom.json"
     exit 1
   fi
 else
