@@ -11,15 +11,12 @@ A Nix-based build system for processing open source packages into structured met
 deptext.mkRustPackage {
   pname = "serde";
   version = "1.0.215";
+  hash = "sha256:04xwh16jm7szizkkhj637jv23i5x8jnzcfrw6bfsrssqkjykaxcm";
   github = {
     owner = "serde-rs";
     repo = "serde";
     rev = "v1.0.215";
     hash = "sha256:0qaz2mclr5cv3s5riag6aj3n3avirirnbi7sxpq4nw1vzrq09j6l";
-  };
-  hashes = {
-    package = "sha256:04xwh16jm7szizkkhj637jv23i5x8jnzcfrw6bfsrssqkjykaxcm";
-    source = "sha256:0qaz2mclr5cv3s5riag6aj3n3avirirnbi7sxpq4nw1vzrq09j6l";
   };
 }
 ```
@@ -57,7 +54,8 @@ Override processor settings per-seed:
 deptext.mkRustPackage {
   pname = "serde";
   version = "1.0.215";
-  # ... other config ...
+  hash = "sha256:...";
+  github = { owner = "serde-rs"; repo = "serde"; rev = "v1.0.215"; hash = "sha256:..."; };
   processors = {
     package-download = { persist = true; };
     source-download = { enabled = false; };

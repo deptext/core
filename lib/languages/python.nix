@@ -34,78 +34,59 @@ let
   persist = import ../utils/persist.nix { inherit lib; };
 in
 {
-  # mkPythonPackage: Create a complete processing pipeline for a Python package
+  # mkPythonPackage: Create a processing pipeline for a Python package
   #
   # ARGUMENTS:
   #   pkgs       - The Nix package set (from nixpkgs)
-  #   pname/name - Package name on PyPI (e.g., "requests")
+  #   pname      - Package name on PyPI (e.g., "requests")
   #   version    - Package version (e.g., "2.31.0")
-  #   github     - GitHub repository info:
-  #                { owner = "psf"; repo = "requests"; rev = "v2.31.0"; }
-  #   hashes     - SHA256 hashes for verification:
-  #                { package = "sha256-..."; source = "sha256-..."; }
+  #   hash       - SHA256 hash of the PyPI tarball
+  #   github     - GitHub repository info: { owner, repo, rev, hash }
   #   processors - (optional) Per-processor configuration
-  #
-  # RETURNS:
-  #   An attribute set with:
-  #   - default: The final derivation (build this to run everything)
-  #   - processors: Individual processor derivations
-  #   - meta: Package metadata (name, version, language)
   mkPythonPackage =
     { pkgs
-    , pname ? null
-    , name ? null
+    , pname
     , version
+    , hash
     , github
-    , hashes
     , processors ? {}
     }:
     let
-      # Support both pname (new) and name (legacy)
-      packageName = if pname != null then pname else name;
-
-      # Merge user-provided processor config with defaults
       processorConfig = lib.recursiveUpdate {
         package-download = { enabled = true; persist = false; };
         source-download = { enabled = true; persist = false; };
         stats = { enabled = true; persist = true; };
       } processors;
 
-      # STEP 1: Package Download from PyPI
       packageDownloadDrv = packageDownloadPython.mkPythonPackageDownload {
-        inherit pkgs version;
-        name = packageName;
-        hash = hashes.package;
+        inherit pkgs version hash;
+        name = pname;
         config = processorConfig.package-download;
       };
 
-      # STEP 2: Source Download from GitHub
       sourceDownloadDrv = sourceDownload.mkSourceDownload {
         inherit pkgs version github;
-        name = packageName;
+        name = pname;
         packageDownload = packageDownloadDrv;
         config = processorConfig.source-download;
       };
 
-      # STEP 3: Stats
       statsDrv = stats.mkStats {
         inherit pkgs version;
-        name = packageName;
+        name = pname;
         sourceDownload = sourceDownloadDrv;
         config = processorConfig.stats;
       };
 
-      # Collect all processors
       allProcessors = {
         package-download = packageDownloadDrv;
         source-download = sourceDownloadDrv;
         stats = statsDrv;
       };
 
-      # Final persist wrapper
       finalDrv = persist.mkPersistWrapper {
         inherit pkgs version;
-        name = packageName;
+        name = pname;
         processors = allProcessors;
       };
 
@@ -114,7 +95,7 @@ in
       default = finalDrv;
       processors = allProcessors;
       meta = {
-        name = packageName;
+        name = pname;
         inherit version;
         language = "python";
         registry = "pypi";

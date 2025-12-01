@@ -36,40 +36,24 @@ let
   persist = import ../utils/persist.nix { inherit lib; };
 in
 {
-  # mkRustPackage: Create a complete processing pipeline for a Rust package
+  # mkRustPackage: Create a processing pipeline for a Rust package
   #
   # ARGUMENTS:
   #   pkgs       - The Nix package set (from nixpkgs)
-  #   pname/name - Crate name on crates.io (e.g., "serde")
+  #   pname      - Crate name on crates.io (e.g., "serde")
   #   version    - Crate version (e.g., "1.0.228")
-  #   github     - GitHub repository info:
-  #                { owner = "serde-rs"; repo = "serde"; rev = "v1.0.228"; }
-  #   hashes     - SHA256 hashes for verification:
-  #                { package = "sha256-..."; source = "sha256-..."; }
-  #   processors - (optional) Per-processor configuration:
-  #                {
-  #                  package-download = { enabled = true; persist = false; };
-  #                  source-download = { enabled = true; persist = false; };
-  #                  stats = { enabled = true; persist = true; };
-  #                }
-  #
-  # RETURNS:
-  #   An attribute set with:
-  #   - default: The final derivation (build this to run everything)
-  #   - processors: Individual processor derivations
-  #   - meta: Package metadata (name, version, language)
+  #   hash       - SHA256 hash of the crate tarball
+  #   github     - GitHub repository info: { owner, repo, rev, hash }
+  #   processors - (optional) Per-processor configuration
   mkRustPackage =
     { pkgs
-    , pname ? null
-    , name ? null
+    , pname
     , version
+    , hash
     , github
-    , hashes
     , processors ? {}
     }:
     let
-      # Support both pname (new) and name (legacy)
-      packageName = if pname != null then pname else name;
       # Merge user-provided processor config with defaults
       # lib.recursiveUpdate does a deep merge of attribute sets
       processorConfig = lib.recursiveUpdate {
@@ -82,28 +66,25 @@ in
       # STEP 1: Package Download
       # Downloads the crate from crates.io and fetches metadata
       packageDownloadDrv = packageDownloadRust.mkRustPackageDownload {
-        inherit pkgs version;
-        name = packageName;
-        hash = hashes.package;
+        inherit pkgs version hash;
+        name = pname;
         config = processorConfig.package-download;
       };
 
       # STEP 2: Source Download
       # Downloads source from GitHub and validates the URL
-      # This depends on packageDownloadDrv (needs metadata.json for validation)
       sourceDownloadDrv = sourceDownload.mkSourceDownload {
         inherit pkgs version github;
-        name = packageName;
+        name = pname;
         packageDownload = packageDownloadDrv;
         config = processorConfig.source-download;
       };
 
       # STEP 3: Stats
       # Counts files and generates statistics
-      # This depends on sourceDownloadDrv (needs source files to count)
       statsDrv = stats.mkStats {
         inherit pkgs version;
-        name = packageName;
+        name = pname;
         sourceDownload = sourceDownloadDrv;
         config = processorConfig.stats;
       };
@@ -119,23 +100,16 @@ in
       # Creates a derivation that collects all persisted outputs
       finalDrv = persist.mkPersistWrapper {
         inherit pkgs version;
-        name = packageName;
+        name = pname;
         processors = allProcessors;
       };
 
     in
     {
-      # The main derivation to build
-      # Running `nix build -f seed.nix` will build this
       default = finalDrv;
-
-      # Individual processors for debugging or selective building
-      # e.g., `nix build -f seed.nix processors.stats`
       processors = allProcessors;
-
-      # Metadata for tooling
       meta = {
-        name = packageName;
+        name = pname;
         inherit version;
         language = "rust";
         registry = "crates.io";
