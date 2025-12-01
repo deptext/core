@@ -79,3 +79,6 @@ runs:
         # GITHUB_TOKEN is automatically provided by the workflow runner
         # It's used by `gh` CLI for API calls (listing PR files)
         GH_TOKEN: ${{ github.token }}
+        # NIX_PATH allows eval-seed.nix to find nixpkgs via <nixpkgs> syntax
+        # "flake:nixpkgs" uses the nixpkgs from the global flake registry
+        NIX_PATH: nixpkgs=flake:nixpkgs
