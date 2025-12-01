@@ -1,0 +1,1 @@
+read @README.md to understand what this project is. Then read the actual projects source code from flake.nix and all files within bin/, lib/ and examples/ to understand the actual implementation.
