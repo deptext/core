@@ -52,32 +52,27 @@ else
   exit 1
 fi
 
-# Test 2: Build the seed using nix build --json
+# Test 2: Build the seed using nix build
 log_info "Test 2: Building the seed (this may take a while)..."
 
-# Capture stdout (JSON) only, let stderr go to terminal for progress
-if ! BUILD_JSON=$(nix build \
+# Build the seed, creating a result symlink
+if ! nix build \
   --impure \
-  --no-link \
-  --json \
+  --out-link "$EXAMPLE_DIR/result" \
   --file "$REPO_ROOT/lib/eval-seed.nix" \
-  --argstr seedPath "$EXAMPLE_DIR/seed.nix" \
-  2>/dev/null); then
+  --argstr seedPath "$EXAMPLE_DIR/seed.nix"; then
   log_fail "Build failed!"
   exit 1
 fi
 
 log_success "Build succeeded!"
 
-# Extract store path from JSON
-STORE_PATH=$(echo "$BUILD_JSON" | jq -r '.[0].outputs.out')
-if [[ -z "$STORE_PATH" || "$STORE_PATH" == "null" ]]; then
-  log_fail "Could not extract store path from build output"
-  echo "$BUILD_JSON"
-  exit 1
-fi
-
+# The result symlink points to our output
+STORE_PATH=$(readlink "$EXAMPLE_DIR/result")
 log_info "Build output: $STORE_PATH"
+
+# Clean up result symlink
+rm "$EXAMPLE_DIR/result"
 
 # Test 3: Verify stats.json exists
 log_info "Test 3: Checking for stats.json..."
@@ -250,16 +245,14 @@ CUSTOM_EXAMPLE_DIR="$REPO_ROOT/examples/rust/serde-custom"
 if [ -f "$CUSTOM_EXAMPLE_DIR/seed.nix" ]; then
   log_info "Building custom configuration seed..."
 
-  # Capture stdout (JSON) and stderr separately
-  if CUSTOM_BUILD_JSON=$(nix build \
+  if nix build \
     --impure \
-    --no-link \
-    --json \
+    --out-link "$CUSTOM_EXAMPLE_DIR/result" \
     --file "$REPO_ROOT/lib/eval-seed.nix" \
-    --argstr seedPath "$CUSTOM_EXAMPLE_DIR/seed.nix" \
-    2>/dev/null); then
+    --argstr seedPath "$CUSTOM_EXAMPLE_DIR/seed.nix"; then
 
-    CUSTOM_BUILD_OUTPUT=$(echo "$CUSTOM_BUILD_JSON" | jq -r '.[0].outputs.out')
+    CUSTOM_BUILD_OUTPUT=$(readlink "$CUSTOM_EXAMPLE_DIR/result")
+    rm "$CUSTOM_EXAMPLE_DIR/result"
     log_success "Custom seed build succeeded!"
 
     # Verify that package-download is now persisted (has persist=true in custom config)
