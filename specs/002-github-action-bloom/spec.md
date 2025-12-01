@@ -24,7 +24,7 @@ As a repository maintainer, I want PRs containing a single seed.nix file to be a
 
 **Acceptance Scenarios**:
 
-1. **Given** a repository with the GitHub Action installed, **When** a contributor opens a PR containing exactly one new seed.nix file, **Then** the action automatically runs ./bin/deptext bloom on that seed file and commits the generated artifacts to the PR branch.
+1. **Given** a repository with the GitHub Action installed, **When** a contributor opens a PR containing exactly one new seed.nix file, **Then** the action automatically runs ./bin/bloom on that seed file and commits the generated artifacts to the PR branch.
 
 2. **Given** a PR with a single seed.nix file, **When** the bloom process completes successfully, **Then** the artifacts (e.g., stats/stats.json) are placed in the same directory as the seed.nix file and committed with a clear commit message.
 
@@ -86,7 +86,7 @@ As a contributor, I want clear feedback when the bloom process fails so that I c
 - **FR-004**: The action MUST validate that exactly one seed.nix file exists in the PR's changed files before proceeding.
 - **FR-005**: The action MUST fail with a descriptive error if the PR contains multiple seed.nix files.
 - **FR-006**: The action MUST skip processing gracefully (exit success) if the PR contains no seed.nix files.
-- **FR-007**: The action MUST execute `./bin/deptext bloom <path-to-seed.nix>` for the detected seed file.
+- **FR-007**: The action MUST execute `./bin/bloom <path-to-seed.nix>` for the detected seed file.
 - **FR-008**: The action MUST install Nix with flakes enabled as part of its execution (consumers do not need to pre-install Nix).
 - **FR-009**: The action MUST move/copy the bloom output artifacts to the same directory as the seed.nix file.
 - **FR-010**: The action MUST commit the artifacts to the PR branch with a descriptive commit message.
@@ -116,7 +116,7 @@ As a contributor, I want clear feedback when the bloom process fails so that I c
 ## Assumptions
 
 - The action is distributed as a reusable composite action; consumers reference it via `uses: deptext/core@v1` and do not need the DepText codebase in their repository.
-- The action bundles or checks out the DepText codebase (including `./bin/deptext` and `lib/`) as part of its execution.
+- The action bundles or checks out the DepText codebase (including `./bin/bloom` and `lib/`) as part of its execution.
 - The action installs Nix with flakes enabled as part of its execution; consumers do not need Nix pre-installed.
 - The action has appropriate permissions to push commits to PR branches (standard GitHub Actions permissions for `contents: write`).
 - PRs from forks may have limited permissions; the action will handle this gracefully.

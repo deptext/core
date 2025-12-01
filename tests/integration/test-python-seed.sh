@@ -5,7 +5,7 @@
 # It builds the requests example seed and verifies the output.
 #
 # WHAT THIS TEST VALIDATES:
-# 1. The deptext CLI works correctly
+# 1. The bloom CLI works correctly
 # 2. The package-download processor fetches from PyPI
 # 3. The source-download processor fetches from GitHub
 # 4. The stats processor generates valid JSON output
@@ -32,7 +32,7 @@ log_fail() { echo -e "${RED}[FAIL]${NC} $1"; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXAMPLE_DIR="$REPO_ROOT/examples/python/requests"
-DEPTEXT="$REPO_ROOT/bin/deptext"
+BLOOM="$REPO_ROOT/bin/bloom"
 
 log_info "Running Python seed integration test"
 log_info "Repository root: $REPO_ROOT"
@@ -47,13 +47,13 @@ else
   exit 1
 fi
 
-# Test 2: Build the seed using deptext CLI
+# Test 2: Build the seed using bloom CLI
 log_info "Test 2: Building the seed (this may take a while)..."
 cd "$EXAMPLE_DIR"
 
 rm -f result
 
-if "$DEPTEXT" build seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
+if "$BLOOM" seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
   log_success "Build succeeded!"
   cat build_stderr.txt
 else

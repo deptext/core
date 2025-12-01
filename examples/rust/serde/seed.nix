@@ -1,6 +1,6 @@
 # Seed: serde 1.0.215
 #
-# Build with: deptext build ./seed.nix
+# Build with: bloom ./seed.nix
 # Or: nix build --impure -f ../../../lib/eval-seed.nix --argstr seedPath $PWD/seed.nix
 
 { deptext }:

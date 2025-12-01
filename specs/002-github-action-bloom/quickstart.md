@@ -73,7 +73,7 @@ When you open a PR with your seed.nix file:
 
 1. The action detects the seed.nix file
 2. Installs Nix with flakes enabled
-3. Runs `./bin/deptext bloom` on your seed
+3. Runs `./bin/bloom` on your seed
 4. Commits the generated artifacts (stats/, .deptext.json) to your PR
 
 ### Expected Output
@@ -91,6 +91,8 @@ nursery/rust/serde/
 
 ### Local Testing
 
+The bloom.sh script requires GitHub CLI (`gh`) and PR context to detect changed files. For local development:
+
 1. Clone the repo and create a test branch:
    ```bash
    git checkout -b test-bloom-action
@@ -98,14 +100,14 @@ nursery/rust/serde/
 
 2. Make changes to action.yml or action/bloom.sh
 
-3. Test the bloom script directly:
+3. Verify shell script syntax:
    ```bash
-   # Set required environment variables
-   export GITHUB_REPOSITORY="deptext/core"
-   export GITHUB_HEAD_REF="test-bloom-action"
+   bash -n action/bloom.sh
+   ```
 
-   # Run with a test seed
-   ./action/bloom.sh examples/rust/serde/seed.nix
+4. Test the bloom tool directly (without the action):
+   ```bash
+   ./bin/bloom examples/rust/serde/seed.nix
    ```
 
 ### Testing in a PR
@@ -130,7 +132,7 @@ Fork PRs from external contributors cannot receive pushed commits due to GitHub 
 
 **Solution**: Contributor should run bloom locally:
 ```bash
-./bin/deptext bloom path/to/seed.nix
+./bin/bloom path/to/seed.nix
 cp -r result/* path/to/seed-directory/
 git add . && git commit -m "chore: add bloom artifacts"
 ```

@@ -47,7 +47,7 @@ Output from file detection step:
 
 ### 4. Bloom Output
 
-Artifacts produced by `./bin/deptext bloom`:
+Artifacts produced by `./bin/bloom`:
 
 | Artifact | Location | Description |
 |----------|----------|-------------|

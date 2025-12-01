@@ -5,7 +5,7 @@
 # It builds the serde example seed and verifies the output.
 #
 # WHAT THIS TEST VALIDATES:
-# 1. The deptext CLI works correctly
+# 1. The bloom CLI works correctly
 # 2. mkRustPackage creates a valid derivation
 # 3. The package-download processor fetches from crates.io
 # 4. The source-download processor fetches from GitHub
@@ -38,7 +38,7 @@ log_fail() { echo -e "${RED}[FAIL]${NC} $1"; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXAMPLE_DIR="$REPO_ROOT/examples/rust/serde"
-DEPTEXT="$REPO_ROOT/bin/deptext"
+BLOOM="$REPO_ROOT/bin/bloom"
 
 log_info "Running Rust seed integration test"
 log_info "Repository root: $REPO_ROOT"
@@ -53,7 +53,7 @@ else
   exit 1
 fi
 
-# Test 2: Build the seed using deptext CLI
+# Test 2: Build the seed using bloom CLI
 log_info "Test 2: Building the seed (this may take a while)..."
 cd "$EXAMPLE_DIR"
 
@@ -61,7 +61,7 @@ cd "$EXAMPLE_DIR"
 rm -f result
 
 # Build the seed using the CLI
-if "$DEPTEXT" build seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
+if "$BLOOM" seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
   log_success "Build succeeded!"
   cat build_stderr.txt
 else
@@ -151,7 +151,7 @@ if [ -f "$CUSTOM_EXAMPLE_DIR/seed.nix" ]; then
   cd "$CUSTOM_EXAMPLE_DIR"
   rm -f result
 
-  if "$DEPTEXT" build seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
+  if "$BLOOM" seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
     cat build_stderr.txt
     CUSTOM_BUILD_OUTPUT=$(tail -1 build_output.txt)
     log_success "Custom seed build succeeded!"

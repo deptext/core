@@ -90,7 +90,7 @@ git push
 
 **Implementation**:
 - Detect push failure and output helpful message
-- Suggest running `./bin/deptext bloom` locally
+- Suggest running `./bin/bloom` locally
 - Action exits with non-zero status (clear failure)
 
 **Alternatives Considered**:

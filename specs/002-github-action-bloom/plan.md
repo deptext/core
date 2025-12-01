@@ -5,7 +5,7 @@
 
 ## Summary
 
-Create a reusable GitHub composite action that automatically processes ("blooms") seed.nix files in pull requests. The action validates that exactly one seed.nix file exists in the PR, installs Nix with flakes, runs `./bin/deptext bloom`, and commits the resulting artifacts back to the PR branch. Consumers reference it via `uses: deptext/core@v1`.
+Create a reusable GitHub composite action that automatically processes ("blooms") seed.nix files in pull requests. The action validates that exactly one seed.nix file exists in the PR, installs Nix with flakes, runs `./bin/bloom`, and commits the resulting artifacts back to the PR branch. Consumers reference it via `uses: deptext/core@v1`.
 
 ## Technical Context
 
@@ -55,7 +55,7 @@ action/
 
 # Existing DepText structure (unchanged)
 bin/
-└── deptext              # CLI entrypoint (existing)
+└── bloom                # CLI entrypoint (existing)
 lib/                     # Nix library (existing)
 examples/                # Example seeds (existing)
 ```

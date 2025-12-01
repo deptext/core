@@ -4,7 +4,7 @@
 # - package-download: persist = true (normally false)
 # - source-download: disabled
 #
-# Build with: deptext build ./seed.nix
+# Build with: bloom ./seed.nix
 
 { deptext }:
 

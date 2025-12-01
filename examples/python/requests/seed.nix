@@ -1,6 +1,6 @@
 # Seed: requests 2.31.0
 #
-# Build with: deptext build ./seed.nix
+# Build with: bloom ./seed.nix
 
 { deptext }:
 

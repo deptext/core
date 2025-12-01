@@ -1,0 +1,81 @@
+# action.yml - DepText Bloom Composite Action
+#
+# This file defines a "composite action" - a reusable GitHub Action that can be
+# called from other workflows. When someone writes `uses: deptext/core@v1` in
+# their workflow, GitHub runs the steps defined below.
+#
+# A composite action is like a recipe: it lists ingredients (inputs) and
+# instructions (steps) that run in order on the GitHub Actions runner.
+#
+# For more info: https://docs.github.com/en/actions/creating-actions/creating-a-composite-action
+
+# Human-readable name shown in GitHub Actions UI
+name: 'DepText Bloom'
+
+# Short description shown in GitHub Marketplace and action summaries
+description: 'Automatically process seed.nix files and commit bloomed artifacts back to the PR'
+
+# This action requires no inputs - it uses GitHub context variables automatically
+# (like github.head_ref, github.repository, etc.)
+
+# Define how this action runs
+runs:
+  # "composite" means this action runs a series of steps directly on the runner
+  # (as opposed to "docker" or "node16" which run in containers or Node.js)
+  using: 'composite'
+
+  # Steps run in order, just like in a regular workflow job
+  steps:
+    # Step 1: Check out the consumer's repository
+    #
+    # "actions/checkout" clones the repository onto the runner so we can read
+    # and modify files. We use `ref: ${{ github.head_ref }}` to check out the
+    # PR's source branch (not the merge commit), which allows us to push
+    # commits back to the PR.
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        # github.head_ref is the branch name of the PR (e.g., "feature/add-serde")
+        # We need this specific branch so we can push commits back to it
+        ref: ${{ github.head_ref }}
+
+    # Step 2: Install Nix with flakes enabled
+    #
+    # Nix is the package manager/build tool that processes seed.nix files.
+    # "Flakes" are an experimental Nix feature that provides reproducible builds.
+    # cachix/install-nix-action is the standard way to install Nix on GitHub runners.
+    - name: Install Nix
+      uses: cachix/install-nix-action@v31
+      with:
+        # extra_nix_config adds settings to Nix's configuration file
+        # This enables two experimental features:
+        # - nix-command: Modern CLI commands like `nix build`, `nix run`
+        # - flakes: Reproducible package definitions (required for our seeds)
+        extra_nix_config: |
+          experimental-features = nix-command flakes
+
+    # Step 3: Run the bloom script
+    #
+    # This runs our custom bash script that:
+    # 1. Detects which seed.nix files changed in the PR
+    # 2. Validates exactly one seed exists (or skips/fails appropriately)
+    # 3. Runs `./bin/bloom` to process the seed
+    # 4. Commits and pushes the generated artifacts back to the PR
+    #
+    # ${{ github.action_path }} is a special variable that points to the
+    # directory where THIS action is located (deptext/core repo root).
+    # This lets us call our `bin/bloom` tool from the action.
+    - name: Detect and bloom seed.nix
+      shell: bash
+      run: |
+        # Make the script executable (git doesn't always preserve permissions)
+        chmod +x "${{ github.action_path }}/action/bloom.sh"
+        # Run the bloom script, passing the action path so it can find bin/bloom
+        "${{ github.action_path }}/action/bloom.sh"
+      env:
+        # Pass the action's location so bloom.sh can find the deptext tooling
+        # (bin/bloom lives in the action repository, not the consumer's repo)
+        ACTION_PATH: ${{ github.action_path }}
+        # GITHUB_TOKEN is automatically provided by the workflow runner
+        # It's used by `gh` CLI for API calls (listing PR files)
+        GH_TOKEN: ${{ github.token }}
