@@ -54,7 +54,7 @@ in
     }:
     let
       # Import our URL validation utilities
-      validate = import ./utils/validate.nix { inherit lib; };
+      validate = import ../utils/validate.nix { inherit lib; };
 
       # Build the expected GitHub URL from the seed configuration
       seedGitHubUrl = validate.buildGitHubUrl github.owner github.repo;
