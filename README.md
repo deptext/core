@@ -23,12 +23,12 @@ deptext.mkRustPackage {
 
 Build with:
 ```bash
-./bin/deptext build examples/rust/serde/seed.nix
+./bin/bloom examples/rust/serde/seed.nix
 ```
 
 Or via flake:
 ```bash
-nix run github:deptext/core -- build ./seed.nix
+nix run github:deptext/core#bloom -- ./seed.nix
 ```
 
 ## Supported Languages
