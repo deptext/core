@@ -4,11 +4,15 @@
 # This module handles checking for changes, committing, pushing,
 # and error handling for git operations.
 
-# check_for_changes() - Determine if there are uncommitted changes
+# check_for_changes() - Determine if there are uncommitted changes in a directory
+#
+# Arguments:
+#   $1 = Directory to check for changes
 #
 # Returns: exit code 0 if there ARE changes, exit code 1 if clean
 check_for_changes() {
-    [[ -n "$(git status --porcelain)" ]]
+    local dir="$1"
+    [[ -n "$(git status --porcelain "$dir")" ]]
 }
 
 # configure_git() - Set up git identity for commits
@@ -56,13 +60,18 @@ handle_push_failure() {
 # Arguments:
 #   $1 = Path to the seed file (used in commit message)
 #
-# Commits all changes with a descriptive message and pushes to the PR branch.
+# Commits only the seed directory with a descriptive message and pushes to the PR branch.
+# This avoids accidentally committing unrelated files.
 commit_and_push() {
     local seed_path="$1"
-    log "Committing artifacts..."
+    local seed_dir
+    seed_dir=$(dirname "$seed_path")
+
+    log "Committing artifacts for $seed_dir..."
 
     configure_git
-    git add .
+    # Only add files from the seed directory, not the entire repo
+    git add "$seed_dir"
     git commit -m "chore: bloom artifacts for $seed_path"
 
     log "Pushing to branch..."
@@ -79,11 +88,13 @@ commit_and_push() {
 # Arguments:
 #   $1 = Path to the seed file (used in commit message)
 #
-# Skips commit if no changes exist (idempotent behavior).
+# Skips commit if no changes exist in the seed directory (idempotent behavior).
 commit_if_changed() {
     local seed_path="$1"
+    local seed_dir
+    seed_dir=$(dirname "$seed_path")
 
-    if check_for_changes; then
+    if check_for_changes "$seed_dir"; then
         commit_and_push "$seed_path"
     else
         log_success "No changes to commit - artifacts already up to date"

@@ -30,13 +30,13 @@ source "$SCRIPT_DIR/lib/git.sh"
 
 # cleanup_on_failure() - Clean up temporary files when something fails
 #
-# Removes result directory and resets staged changes to avoid partial state.
+# Resets staged changes to avoid partial state.
+# Note: We use --no-link when building, so there's no "result" symlink to clean up.
 cleanup_on_failure() {
     local exit_code=$?
 
     if [[ $exit_code -ne 0 ]]; then
         log "Cleaning up after failure..."
-        [[ -d "result" ]] && rm -rf result
         git reset --quiet HEAD 2>/dev/null || true
     fi
 

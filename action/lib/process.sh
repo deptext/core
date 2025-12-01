@@ -23,36 +23,45 @@ get_seed_directory() {
 # Arguments:
 #   $1 = Path to the seed.nix file to process
 #
+# Returns: The Nix store path of the build output (via stdout)
+#
 # The bloom tool reads the seed.nix, downloads the package, analyzes it,
-# and outputs results to a "result" symlink.
+# and outputs results to the Nix store. We use --no-link to avoid creating
+# a "result" symlink (which would get accidentally committed to git).
 #
 # Requires: ACTION_PATH environment variable pointing to deptext/core repo
 run_bloom() {
     local seed_path="$1"
     log "Running bloom on $seed_path..."
-    "$ACTION_PATH/bin/bloom" "$seed_path"
-    log_success "Bloom completed"
+    # Use --no-link to prevent creating a "result" symlink in the working directory
+    # Use --print-out-paths to get the store path on stdout
+    local store_path
+    store_path=$("$ACTION_PATH/bin/bloom" "$seed_path" --no-link --print-out-paths)
+    log_success "Bloom completed: $store_path"
+    echo "$store_path"
 }
 
-# copy_artifacts() - Move bloom results to the seed directory
+# copy_artifacts() - Copy bloom results from store path to seed directory
 #
 # Arguments:
-#   $1 = Path to the seed directory
+#   $1 = Nix store path containing build output
+#   $2 = Path to the seed directory
 #
-# Copies everything from ./result/ to the seed's directory so artifacts
-# live alongside the seed.nix file.
+# Copies everything from the Nix store path to the seed's directory so
+# artifacts live alongside the seed.nix file.
 copy_artifacts() {
-    local seed_dir="$1"
+    local store_path="$1"
+    local seed_dir="$2"
     log "Copying artifacts to $seed_dir..."
 
-    # Check if result directory exists and has contents
-    if [[ ! -d "result" ]] || [[ -z "$(ls -A result 2>/dev/null)" ]]; then
+    # Check if store path exists and has contents
+    if [[ ! -d "$store_path" ]] || [[ -z "$(ls -A "$store_path" 2>/dev/null)" ]]; then
         log "No artifacts produced by bloom"
         return 0
     fi
 
     # Copy all files, dereferencing symlinks
-    for item in result/*; do
+    for item in "$store_path"/*; do
         if [[ -e "$item" ]]; then
             local name
             name=$(basename "$item")
@@ -74,6 +83,8 @@ process_seed() {
     local seed_dir
     seed_dir=$(get_seed_directory "$seed_path")
 
-    run_bloom "$seed_path"
-    copy_artifacts "$seed_dir"
+    # run_bloom returns the store path via stdout
+    local store_path
+    store_path=$(run_bloom "$seed_path")
+    copy_artifacts "$store_path" "$seed_dir"
 }
