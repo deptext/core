@@ -5,7 +5,7 @@
 # It builds the requests example seed and verifies the output.
 #
 # WHAT THIS TEST VALIDATES:
-# 1. mkPythonPackage creates a valid derivation
+# 1. The deptext CLI works correctly
 # 2. The package-download processor fetches from PyPI
 # 3. The source-download processor fetches from GitHub
 # 4. The stats processor generates valid JSON output
@@ -32,6 +32,7 @@ log_fail() { echo -e "${RED}[FAIL]${NC} $1"; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXAMPLE_DIR="$REPO_ROOT/examples/python/requests"
+DEPTEXT="$REPO_ROOT/bin/deptext"
 
 log_info "Running Python seed integration test"
 log_info "Repository root: $REPO_ROOT"
@@ -46,25 +47,27 @@ else
   exit 1
 fi
 
-# Test 2: Build the seed
+# Test 2: Build the seed using deptext CLI
 log_info "Test 2: Building the seed (this may take a while)..."
 cd "$EXAMPLE_DIR"
 
 rm -f result
 
-if nix build -f seed.nix --impure --no-link --print-out-paths > build_output.txt 2>&1; then
-  BUILD_OUTPUT=$(cat build_output.txt)
+if "$DEPTEXT" build seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
   log_success "Build succeeded!"
-  log_info "Build output: $BUILD_OUTPUT"
+  cat build_stderr.txt
 else
   log_fail "Build failed!"
+  cat build_stderr.txt
   cat build_output.txt
-  rm -f build_output.txt
+  rm -f build_output.txt build_stderr.txt
   exit 1
 fi
 
-rm -f build_output.txt
-STORE_PATH="$BUILD_OUTPUT"
+# The store path is on the last line of stdout
+STORE_PATH=$(tail -1 build_output.txt)
+rm -f build_output.txt build_stderr.txt
+log_info "Build output: $STORE_PATH"
 
 # Test 3: Verify stats.json exists
 log_info "Test 3: Checking for stats.json..."

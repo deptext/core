@@ -40,7 +40,7 @@ in
   #
   # ARGUMENTS:
   #   pkgs       - The Nix package set (from nixpkgs)
-  #   name       - Crate name on crates.io (e.g., "serde")
+  #   pname/name - Crate name on crates.io (e.g., "serde")
   #   version    - Crate version (e.g., "1.0.228")
   #   github     - GitHub repository info:
   #                { owner = "serde-rs"; repo = "serde"; rev = "v1.0.228"; }
@@ -60,13 +60,16 @@ in
   #   - meta: Package metadata (name, version, language)
   mkRustPackage =
     { pkgs
-    , name
+    , pname ? null
+    , name ? null
     , version
     , github
     , hashes
     , processors ? {}
     }:
     let
+      # Support both pname (new) and name (legacy)
+      packageName = if pname != null then pname else name;
       # Merge user-provided processor config with defaults
       # lib.recursiveUpdate does a deep merge of attribute sets
       processorConfig = lib.recursiveUpdate {
@@ -79,7 +82,8 @@ in
       # STEP 1: Package Download
       # Downloads the crate from crates.io and fetches metadata
       packageDownloadDrv = packageDownloadRust.mkRustPackageDownload {
-        inherit pkgs name version;
+        inherit pkgs version;
+        name = packageName;
         hash = hashes.package;
         config = processorConfig.package-download;
       };
@@ -88,7 +92,8 @@ in
       # Downloads source from GitHub and validates the URL
       # This depends on packageDownloadDrv (needs metadata.json for validation)
       sourceDownloadDrv = sourceDownload.mkSourceDownload {
-        inherit pkgs name version github;
+        inherit pkgs version github;
+        name = packageName;
         packageDownload = packageDownloadDrv;
         config = processorConfig.source-download;
       };
@@ -97,7 +102,8 @@ in
       # Counts files and generates statistics
       # This depends on sourceDownloadDrv (needs source files to count)
       statsDrv = stats.mkStats {
-        inherit pkgs name version;
+        inherit pkgs version;
+        name = packageName;
         sourceDownload = sourceDownloadDrv;
         config = processorConfig.stats;
       };
@@ -112,7 +118,8 @@ in
       # FINAL: Persist Wrapper
       # Creates a derivation that collects all persisted outputs
       finalDrv = persist.mkPersistWrapper {
-        inherit pkgs name version;
+        inherit pkgs version;
+        name = packageName;
         processors = allProcessors;
       };
 
@@ -128,7 +135,8 @@ in
 
       # Metadata for tooling
       meta = {
-        inherit name version;
+        name = packageName;
+        inherit version;
         language = "rust";
         registry = "crates.io";
       };

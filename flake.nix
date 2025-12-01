@@ -73,6 +73,31 @@
             nix-prefetch-github
           ];
         };
+
+        # CLI APP: The deptext command-line tool
+        # Run with: nix run .# -- build ./seed.nix
+        # Or install: nix profile install .#
+        packages.deptext-cli = pkgs.stdenv.mkDerivation {
+          pname = "deptext";
+          version = "0.1.0";
+          src = self;
+          installPhase = ''
+            mkdir -p $out/bin $out/lib
+            cp -r lib/* $out/lib/
+            cp bin/deptext $out/bin/
+            # Patch the script to use the installed lib path
+            substituteInPlace $out/bin/deptext \
+              --replace 'DEPTEXT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"' \
+                        'DEPTEXT_ROOT="'"$out"'"'
+          '';
+        };
+
+        packages.default = self.packages.${system}.deptext-cli;
+
+        apps.default = {
+          type = "app";
+          program = "${self.packages.${system}.deptext-cli}/bin/deptext";
+        };
       }
     );
 }

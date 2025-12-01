@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# DepText CLI - Build seeds with minimal boilerplate
+#
+# USAGE:
+#   deptext build <seed.nix> [nix-build-options...]
+#
+# EXAMPLES:
+#   deptext build ./seed.nix
+#   deptext build ./seed.nix --print-out-paths
+#   deptext build ./seed.nix -o ./result
+
+set -euo pipefail
+
+# Find the deptext root (where this script lives)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEPTEXT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+usage() {
+  cat <<EOF
+DepText - Package processing pipeline for LLM context generation
+
+USAGE:
+  deptext <command> [options]
+
+COMMANDS:
+  build <seed.nix>   Build a seed file
+  help               Show this help message
+
+EXAMPLES:
+  deptext build ./seed.nix
+  deptext build ./seed.nix --print-out-paths
+  deptext build examples/rust/serde/seed.nix -o ./result
+
+EOF
+}
+
+cmd_build() {
+  if [ $# -lt 1 ]; then
+    echo "Error: Missing seed path" >&2
+    echo "Usage: deptext build <seed.nix> [nix-build-options...]" >&2
+    exit 1
+  fi
+
+  local seed_path="$1"
+  shift
+
+  # Resolve to absolute path
+  if [[ "$seed_path" != /* ]]; then
+    seed_path="$(pwd)/$seed_path"
+  fi
+  seed_path="$(cd "$(dirname "$seed_path")" && pwd)/$(basename "$seed_path")"
+
+  if [ ! -f "$seed_path" ]; then
+    echo "Error: Seed file not found: $seed_path" >&2
+    exit 1
+  fi
+
+  # Build the seed using eval-seed.nix wrapper
+  nix build \
+    --impure \
+    --file "$DEPTEXT_ROOT/lib/eval-seed.nix" \
+    --argstr seedPath "$seed_path" \
+    "$@"
+}
+
+# Main command dispatch
+case "${1:-help}" in
+  build)
+    shift
+    cmd_build "$@"
+    ;;
+  help|--help|-h)
+    usage
+    ;;
+  *)
+    echo "Error: Unknown command '$1'" >&2
+    echo "Run 'deptext help' for usage" >&2
+    exit 1
+    ;;
+esac

@@ -38,7 +38,7 @@ in
   #
   # ARGUMENTS:
   #   pkgs       - The Nix package set (from nixpkgs)
-  #   name       - Package name on PyPI (e.g., "requests")
+  #   pname/name - Package name on PyPI (e.g., "requests")
   #   version    - Package version (e.g., "2.31.0")
   #   github     - GitHub repository info:
   #                { owner = "psf"; repo = "requests"; rev = "v2.31.0"; }
@@ -53,13 +53,17 @@ in
   #   - meta: Package metadata (name, version, language)
   mkPythonPackage =
     { pkgs
-    , name
+    , pname ? null
+    , name ? null
     , version
     , github
     , hashes
     , processors ? {}
     }:
     let
+      # Support both pname (new) and name (legacy)
+      packageName = if pname != null then pname else name;
+
       # Merge user-provided processor config with defaults
       processorConfig = lib.recursiveUpdate {
         package-download = { enabled = true; persist = false; };
@@ -69,21 +73,24 @@ in
 
       # STEP 1: Package Download from PyPI
       packageDownloadDrv = packageDownloadPython.mkPythonPackageDownload {
-        inherit pkgs name version;
+        inherit pkgs version;
+        name = packageName;
         hash = hashes.package;
         config = processorConfig.package-download;
       };
 
       # STEP 2: Source Download from GitHub
       sourceDownloadDrv = sourceDownload.mkSourceDownload {
-        inherit pkgs name version github;
+        inherit pkgs version github;
+        name = packageName;
         packageDownload = packageDownloadDrv;
         config = processorConfig.source-download;
       };
 
       # STEP 3: Stats
       statsDrv = stats.mkStats {
-        inherit pkgs name version;
+        inherit pkgs version;
+        name = packageName;
         sourceDownload = sourceDownloadDrv;
         config = processorConfig.stats;
       };
@@ -97,7 +104,8 @@ in
 
       # Final persist wrapper
       finalDrv = persist.mkPersistWrapper {
-        inherit pkgs name version;
+        inherit pkgs version;
+        name = packageName;
         processors = allProcessors;
       };
 
@@ -106,7 +114,8 @@ in
       default = finalDrv;
       processors = allProcessors;
       meta = {
-        inherit name version;
+        name = packageName;
+        inherit version;
         language = "python";
         registry = "pypi";
       };
