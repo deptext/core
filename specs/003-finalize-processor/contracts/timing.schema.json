@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://deptext.dev/schemas/timing.schema.json",
+  "title": "Processor Timing Data",
+  "description": "Auto-generated timing information for each processor, created by the mkProcessor factory function. Lives at root of processor output directory (NOT in publish/).",
+  "type": "object",
+  "required": ["startTime", "endTime", "buildDuration"],
+  "additionalProperties": false,
+  "properties": {
+    "startTime": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix epoch timestamp in milliseconds when the processor build phase started"
+    },
+    "endTime": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Unix epoch timestamp in milliseconds when the processor build phase completed"
+    },
+    "buildDuration": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Build duration in milliseconds (should equal endTime - startTime)"
+    }
+  },
+  "examples": [
+    {
+      "startTime": 1701432000000,
+      "endTime": 1701432012345,
+      "buildDuration": 12345
+    }
+  ]
+}

@@ -5,6 +5,8 @@ Auto-generated from all feature plans. Last updated: 2025-11-30
 ## Active Technologies
 - YAML (GitHub Actions), Bash (shell scripts) + cachix/install-nix-action (Nix installer), actions/checkout, GitHub CLI (gh) (002-github-action-bloom)
 - N/A (artifacts stored in git) (002-github-action-bloom)
+- Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins, jq for JSON processing, coreutils for file operations, findutils for directory scanning (003-finalize-processor)
+- Nix store for processor I/O; filesystem for persisted bloom outputs (003-finalize-processor)
 
 - Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins (fetchurl, fetchFromGitHub), jq for JSON processing, coreutils for file operations (001-nix-processor-pipeline)
 
@@ -24,6 +26,7 @@ tests/
 Nix (flakes-enabled, requires Nix 2.4+): Follow standard conventions
 
 ## Recent Changes
+- 003-finalize-processor: Added Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins, jq for JSON processing, coreutils for file operations, findutils for directory scanning
 - 002-github-action-bloom: Added YAML (GitHub Actions), Bash (shell scripts) + cachix/install-nix-action (Nix installer), actions/checkout, GitHub CLI (gh)
 
 - 001-nix-processor-pipeline: Added Nix (flakes-enabled, requires Nix 2.4+) + Nix builtins (fetchurl, fetchFromGitHub), jq for JSON processing, coreutils for file operations

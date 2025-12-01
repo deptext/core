@@ -20,11 +20,17 @@
 # - github: { owner, repo, rev, hash } from the seed configuration
 # - seedGitHubUrl: The GitHub URL specified in seed.nix (for validation)
 #
-# OUTPUTS:
-# - source/: Directory containing the full GitHub source tree
+# OUTPUTS (in publish/ subfolder):
+# - publish/source/: Directory containing the full GitHub source tree
+#
+# Additionally, timing.json is auto-generated at the root by mkProcessor.
 
 { lib }:
 
+let
+  # Import the processor factory which handles timing injection
+  processorFactory = import ./default.nix { inherit lib; };
+in
 {
   # mkSourceDownload: Create a source-download processor derivation
   #
@@ -48,10 +54,23 @@
     }:
     let
       # Import our URL validation utilities
-      validate = import ../utils/validate.nix { inherit lib; };
+      validate = import ./utils/validate.nix { inherit lib; };
 
       # Build the expected GitHub URL from the seed configuration
       seedGitHubUrl = validate.buildGitHubUrl github.owner github.repo;
+
+      # SOURCE CODE: Download from GitHub
+      # fetchFromGitHub is a Nix built-in that:
+      # - Downloads a tarball from GitHub's archive URL
+      # - Extracts it to a directory
+      # - Verifies the hash matches what we expect
+      # We do this outside the derivation so Nix can cache it properly.
+      githubSrc = pkgs.fetchFromGitHub {
+        owner = github.owner;
+        repo = github.repo;
+        rev = github.rev;
+        hash = github.hash;
+      };
     in
     # If the processor is disabled, return a minimal "skip" derivation
     # that just creates an empty output. This satisfies Nix's requirement
@@ -59,52 +78,40 @@
     if !(config.enabled or true) then
       pkgs.runCommand "deptext-source-download-${name}-${version}-skipped" {} ''
         # Create a marker file indicating this processor was skipped
-        mkdir -p $out/source
-        echo "Processor skipped (enabled=false)" > $out/source/.skipped
+        mkdir -p $out/publish/source
+        echo "Processor skipped (enabled=false)" > $out/publish/source/.skipped
+        # Create empty timing.json for consistency
+        echo '{"startTime": 0, "endTime": 0, "buildDuration": 0}' > $out/timing.json
       ''
     else
-      pkgs.stdenv.mkDerivation {
-        # Derivation name includes package info for easy identification
-        # in the Nix store and build logs
-        pname = "deptext-source-download";
-        inherit version;
-        name = "deptext-source-download-${name}-${version}";
+      # Use mkProcessor factory for automatic timing injection
+      processorFactory.mkProcessor {
+        inherit pkgs version;
+        name = "source-download";
+        pname = name;
+        persist = config.persist or false;
 
-        # SOURCE CODE: Download from GitHub
-        # fetchFromGitHub is a Nix built-in that:
-        # - Downloads a tarball from GitHub's archive URL
-        # - Extracts it to a directory
-        # - Verifies the hash matches what we expect
-        src = pkgs.fetchFromGitHub {
-          owner = github.owner;
-          repo = github.repo;
-          rev = github.rev;
-          hash = github.hash;
-        };
-
-        # No build phase needed - we're just copying source code
-        dontBuild = true;
-
-        # INSTALL PHASE: Copy source and validate URLs
-        # This runs after the source is downloaded and extracted
-        installPhase = ''
-          # Create the output directory structure
-          mkdir -p $out/source
+        # The buildScript runs inside mkProcessor's timing wrapper
+        # $out/publish is already created by mkProcessor
+        buildScript = ''
+          # Create the source subdirectory inside publish/
+          mkdir -p $out/publish/source
 
           # Read the metadata.json from the package-download processor
           # This file contains registry information including the repo URL
-          metadata_file="${packageDownload}/metadata.json"
+          # Note: We now look in publish/ subfolder since package-download was updated
+          metadata_file="${packageDownload}/publish/metadata.json"
 
           if [ -f "$metadata_file" ]; then
             # Extract the repository URL from metadata using jq
             # jq is a command-line JSON processor
             # The -r flag outputs raw strings (no quotes)
             # // empty means "if null, output nothing"
-            metadata_repo=$(${pkgs.jq}/bin/jq -r '.repository // .project_urls.Source // empty' "$metadata_file" 2>/dev/null || echo "")
+            metadata_repo=$(jq -r '.repository // .project_urls.Source // empty' "$metadata_file" 2>/dev/null || echo "")
 
             if [ -n "$metadata_repo" ]; then
               # Normalize URLs for comparison
-              # Remove trailing .git and slashes
+              # Remove trailing .git and slashes so URLs can be compared fairly
               normalize_url() {
                 echo "$1" | sed 's/\.git$//' | sed 's/\/$//'
               }
@@ -135,21 +142,9 @@
 
           # Copy the source tree to our output
           # -r = recursive, -L = follow symlinks
-          cp -rL $src/* $out/source/ || cp -rL $src/. $out/source/
+          cp -rL ${githubSrc}/* $out/publish/source/ || cp -rL ${githubSrc}/. $out/publish/source/
 
-          echo "Source download complete: $(find $out/source -type f | wc -l) files"
+          echo "Source download complete: $(find $out/publish/source -type f | wc -l) files"
         '';
-
-        # Metadata about this derivation for Nix tooling
-        meta = {
-          description = "DepText source download for ${name} ${version}";
-        };
-
-        # Pass through the persist configuration so the final derivation
-        # can check whether to copy this output to the seed directory
-        passthru = {
-          processorName = "source-download";
-          persist = config.persist or false;
-        };
       };
 }

@@ -142,6 +142,79 @@ else
   log_warn ".deptext.json not found (this is optional)"
 fi
 
+# Test 5.1: Check README.md from finalize processor
+log_info "Test 5.1: Checking for README.md..."
+if [ -f "$STORE_PATH/README.md" ]; then
+  log_success "README.md found!"
+  log_info "Contents:"
+  cat "$STORE_PATH/README.md"
+else
+  log_fail "README.md not found at $STORE_PATH/README.md"
+  log_info "Directory contents:"
+  find "$STORE_PATH" -type f 2>/dev/null | head -20 || echo "(empty or not accessible)"
+  exit 1
+fi
+
+# Test 5.2: Check bloom.json from finalize processor
+log_info "Test 5.2: Checking for bloom.json..."
+if [ -f "$STORE_PATH/bloom.json" ]; then
+  log_success "bloom.json found!"
+  log_info "Contents:"
+  cat "$STORE_PATH/bloom.json"
+else
+  log_fail "bloom.json not found at $STORE_PATH/bloom.json"
+  exit 1
+fi
+
+# Test 5.3: Validate bloom.json structure
+log_info "Test 5.3: Validating bloom.json structure..."
+BLOOM_FILE="$STORE_PATH/bloom.json"
+
+if command -v jq &> /dev/null; then
+  BLOOM_PNAME=$(jq -r '.pname' "$BLOOM_FILE" 2>/dev/null)
+  BLOOM_VERSION=$(jq -r '.version' "$BLOOM_FILE" 2>/dev/null)
+  BLOOM_LANGUAGE=$(jq -r '.language' "$BLOOM_FILE" 2>/dev/null)
+  BLOOM_BUILD_DURATION=$(jq -r '.buildDuration' "$BLOOM_FILE" 2>/dev/null)
+  BLOOM_PROCESSORS=$(jq -r '.processors | keys | length' "$BLOOM_FILE" 2>/dev/null)
+
+  if [ "$BLOOM_PNAME" = "serde" ]; then
+    log_success "bloom.json pname is correct: $BLOOM_PNAME"
+  else
+    log_fail "bloom.json pname is incorrect: expected 'serde', got '$BLOOM_PNAME'"
+    exit 1
+  fi
+
+  if [ "$BLOOM_VERSION" = "1.0.215" ]; then
+    log_success "bloom.json version is correct: $BLOOM_VERSION"
+  else
+    log_fail "bloom.json version is incorrect: expected '1.0.215', got '$BLOOM_VERSION'"
+    exit 1
+  fi
+
+  if [ "$BLOOM_LANGUAGE" = "rust" ]; then
+    log_success "bloom.json language is correct: $BLOOM_LANGUAGE"
+  else
+    log_fail "bloom.json language is incorrect: expected 'rust', got '$BLOOM_LANGUAGE'"
+    exit 1
+  fi
+
+  if [ "$BLOOM_BUILD_DURATION" != "null" ] && [ "$BLOOM_BUILD_DURATION" -ge 0 ]; then
+    log_success "bloom.json buildDuration is valid: ${BLOOM_BUILD_DURATION}ms"
+  else
+    log_fail "bloom.json buildDuration is missing or invalid"
+    exit 1
+  fi
+
+  if [ "$BLOOM_PROCESSORS" -ge 3 ]; then
+    log_success "bloom.json has $BLOOM_PROCESSORS processors"
+  else
+    log_fail "bloom.json should have at least 3 processors, got $BLOOM_PROCESSORS"
+    exit 1
+  fi
+else
+  log_warn "jq not found, skipping bloom.json structure validation"
+fi
+
 # Test 6: Test custom configuration seed (US3)
 log_info "Test 6: Testing custom configuration seed..."
 CUSTOM_EXAMPLE_DIR="$REPO_ROOT/examples/rust/serde-custom"

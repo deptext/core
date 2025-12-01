@@ -12,12 +12,18 @@
 # - Packages are downloaded from: https://crates.io/api/v1/crates/{name}/{version}/download
 # - The package contains Cargo.toml which has repository info
 #
-# OUTPUTS:
-# - package/: Directory containing the extracted crate contents
-# - metadata.json: JSON file with package metadata
+# OUTPUTS (in publish/ subfolder):
+# - publish/package/: Directory containing the extracted crate contents
+# - publish/metadata.json: JSON file with package metadata
+#
+# Additionally, timing.json is auto-generated at the root by mkProcessor.
 
 { lib }:
 
+let
+  # Import the processor factory which handles timing injection
+  processorFactory = import ../default.nix { inherit lib; };
+in
 {
   # mkRustPackageDownload: Create a package-download processor for Rust
   #
@@ -37,54 +43,59 @@
     , hash
     , config ? { enabled = true; persist = false; }
     }:
+    let
+      # DOWNLOAD THE CRATE:
+      # fetchzip downloads a URL, verifies the hash, and extracts it.
+      # crates.io returns a gzipped tarball, so we need to specify the extension.
+      # We do this outside the derivation so Nix can cache it properly.
+      crateSrc = pkgs.fetchzip {
+        name = "${name}-${version}-crate";
+        url = "https://crates.io/api/v1/crates/${name}/${version}/download";
+        extension = "tar.gz";
+        inherit hash;
+      };
+    in
     # If disabled, return a skip derivation
     if !(config.enabled or true) then
       pkgs.runCommand "deptext-package-download-rust-${name}-${version}-skipped" {} ''
-        mkdir -p $out/package
-        echo '{"skipped": true}' > $out/metadata.json
+        mkdir -p $out/publish/package
+        echo '{"skipped": true}' > $out/publish/metadata.json
+        # Create empty timing.json for consistency
+        echo '{"startTime": 0, "endTime": 0, "buildDuration": 0}' > $out/timing.json
       ''
     else
-      pkgs.stdenv.mkDerivation {
-        pname = "deptext-package-download-rust";
-        inherit version;
-        name = "deptext-package-download-rust-${name}-${version}";
+      # Use mkProcessor factory for automatic timing injection
+      processorFactory.mkProcessor {
+        inherit pkgs version;
+        name = "package-download";
+        pname = name;
+        persist = config.persist or false;
 
-        # DOWNLOAD THE CRATE:
-        # fetchzip downloads a URL, verifies the hash, and extracts it.
-        # crates.io returns a gzipped tarball, so we need to specify the extension.
-        src = pkgs.fetchzip {
-          name = "${name}-${version}-crate";
-          url = "https://crates.io/api/v1/crates/${name}/${version}/download";
-          extension = "tar.gz";
-          inherit hash;
-        };
-
-        # We need jq and toml2json (or a simple parser) for creating metadata
-        nativeBuildInputs = with pkgs; [ jq ];
-
-        # Skip the default build phase
-        dontBuild = true;
-
-        # INSTALL PHASE: Copy package and create metadata
-        installPhase = ''
-          mkdir -p $out/package
+        # The buildScript runs inside mkProcessor's timing wrapper
+        # $out/publish is already created by mkProcessor
+        buildScript = ''
+          # Create package subdirectory inside publish/
+          mkdir -p $out/publish/package
 
           # Copy the extracted crate contents
           echo "Copying package contents..."
-          cp -r $src/* $out/package/
+          cp -r ${crateSrc}/* $out/publish/package/
 
           # Create metadata.json from Cargo.toml info
           # We extract what we can from the package itself
           echo "Creating metadata from Cargo.toml..."
 
           # Parse Cargo.toml for repository info (simple grep-based extraction)
+          # "repository = " line contains the GitHub URL
           repo_url=""
-          if [ -f "$out/package/Cargo.toml" ]; then
-            repo_url=$(grep -E "^repository\s*=" "$out/package/Cargo.toml" | head -1 | sed 's/.*=\s*"\([^"]*\)".*/\1/' || echo "")
+          if [ -f "$out/publish/package/Cargo.toml" ]; then
+            repo_url=$(grep -E "^repository\s*=" "$out/publish/package/Cargo.toml" | head -1 | sed 's/.*=\s*"\([^"]*\)".*/\1/' || echo "")
           fi
 
-          # Create the metadata JSON
-          ${pkgs.jq}/bin/jq -n \
+          # Create the metadata JSON using jq
+          # jq -n creates a new JSON object from scratch
+          # --arg creates string variables, (now | todate) gets current ISO timestamp
+          jq -n \
             --arg name "${name}" \
             --arg version "${version}" \
             --arg repository "$repo_url" \
@@ -97,20 +108,11 @@
                 language: "rust",
                 fetched_at: (now | todate)
               }
-            }' > $out/metadata.json
+            }' > $out/publish/metadata.json
 
           echo "Package download complete:"
-          echo "  - Package files: $(find $out/package -type f | wc -l)"
-          echo "  - Metadata: $out/metadata.json"
+          echo "  - Package files: $(find $out/publish/package -type f | wc -l)"
+          echo "  - Metadata: $out/publish/metadata.json"
         '';
-
-        meta = {
-          description = "DepText package download (Rust) for ${name} ${version}";
-        };
-
-        passthru = {
-          processorName = "package-download";
-          persist = config.persist or false;
-        };
       };
 }

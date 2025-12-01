@@ -7,6 +7,7 @@
 # 1. package-download: Fetches the package from PyPI, gets metadata
 # 2. source-download: Fetches source from GitHub, validates URL
 # 3. stats: Counts files and generates statistics
+# 4. finalize: Generates README.md and bloom.json summaries
 #
 # This is nearly identical to the Rust helper - the only difference is
 # the package-download processor used (PyPI instead of crates.io).
@@ -31,6 +32,7 @@ let
   packageDownloadPython = import ../processors/package-download/python.nix { inherit lib; };
   sourceDownload = import ../processors/source-download.nix { inherit lib; };
   stats = import ../processors/stats.nix { inherit lib; };
+  finalize = import ../processors/finalize.nix { inherit lib; };
   persist = import ../utils/persist.nix { inherit lib; };
 in
 {
@@ -56,6 +58,7 @@ in
         package-download = { enabled = true; persist = false; };
         source-download = { enabled = true; persist = false; };
         stats = { enabled = true; persist = true; };
+        finalize = { enabled = true; persist = true; };  # finalize always persists
       } processors;
 
       packageDownloadDrv = packageDownloadPython.mkPythonPackageDownload {
@@ -78,10 +81,25 @@ in
         config = processorConfig.stats;
       };
 
-      allProcessors = {
+      # Collect upstream processor derivations (for finalize to read)
+      upstreamProcessors = {
         package-download = packageDownloadDrv;
         source-download = sourceDownloadDrv;
         stats = statsDrv;
+      };
+
+      # STEP 4: Finalize
+      # Generates README.md and bloom.json after all other processors complete
+      finalizeDrv = finalize.mkFinalize {
+        inherit pkgs pname version github hash;
+        language = "python";
+        processors = upstreamProcessors;
+        inherit processorConfig;
+      };
+
+      # Collect all processor derivations (including finalize)
+      allProcessors = upstreamProcessors // {
+        finalize = finalizeDrv;
       };
 
       finalDrv = persist.mkPersistWrapper {

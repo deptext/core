@@ -15,11 +15,13 @@
 # pipeline works end-to-end.
 #
 # INPUTS:
-# - sourceDownload: The output from source-download processor (has source/)
+# - sourceDownload: The output from source-download processor (has publish/source/)
 # - name, version: Package metadata for the output file
 #
-# OUTPUTS:
-# - stats.json: JSON file with file count and metadata
+# OUTPUTS (in publish/ subfolder):
+# - publish/stats.json: JSON file with file count and metadata
+#
+# Additionally, timing.json is auto-generated at the root by mkProcessor.
 #
 # DEFAULT BEHAVIOR:
 # Unlike other processors, stats has persist=true by default. This means
@@ -28,6 +30,10 @@
 
 { lib }:
 
+let
+  # Import the processor factory which handles timing injection
+  processorFactory = import ./default.nix { inherit lib; };
+in
 {
   # mkStats: Create a stats processor derivation
   #
@@ -50,26 +56,28 @@
     # If the processor is disabled, return a minimal "skip" derivation
     if !(config.enabled or true) then
       pkgs.runCommand "deptext-stats-${name}-${version}-skipped" {} ''
-        mkdir -p $out
-        echo '{"skipped": true}' > $out/stats.json
+        mkdir -p $out/publish
+        echo '{"skipped": true}' > $out/publish/stats.json
+        # Create empty timing.json for consistency
+        echo '{"startTime": 0, "endTime": 0, "buildDuration": 0}' > $out/timing.json
       ''
     else
-      pkgs.stdenv.mkDerivation {
-        pname = "deptext-stats";
-        inherit version;
-        name = "deptext-stats-${name}-${version}";
+      # Use mkProcessor factory for automatic timing injection
+      processorFactory.mkProcessor {
+        inherit pkgs version;
+        name = "stats";
+        pname = name;
+        # Stats persist by default (FR-018)
+        persist = config.persist or true;
 
-        # This processor doesn't need source code - it reads from sourceDownload
-        # Using "unpackPhase = ':';" tells Nix to skip the unpack step
-        src = null;
-        dontUnpack = true;
-
-        # BUILD PHASE: Generate the statistics
-        buildPhase = ''
+        # The buildScript runs inside mkProcessor's timing wrapper
+        # $out/publish is already created by mkProcessor
+        buildScript = ''
           # Count all files in the source directory
           # find -type f finds all regular files (not directories)
           # wc -l counts the number of lines (one per file)
-          source_dir="${sourceDownload}/source"
+          # Note: source-download now outputs to publish/source/
+          source_dir="${sourceDownload}/publish/source"
 
           if [ -d "$source_dir" ]; then
             file_count=$(find "$source_dir" -type f | wc -l)
@@ -84,7 +92,7 @@
 
           # Create the stats.json file using jq
           # We use jq to ensure proper JSON formatting
-          ${pkgs.jq}/bin/jq -n \
+          jq -n \
             --argjson file_count "$file_count" \
             --arg generated_at "$generated_at" \
             --arg pkg_name "${name}" \
@@ -97,30 +105,9 @@
                 name: $pkg_name,
                 version: $pkg_version
               }
-            }' > stats.json
+            }' > $out/publish/stats.json
 
           echo "Generated stats.json: $file_count files counted"
         '';
-
-        # INSTALL PHASE: Copy stats.json to the output
-        installPhase = ''
-          mkdir -p $out
-          cp stats.json $out/
-        '';
-
-        # We need jq available during the build
-        nativeBuildInputs = [ pkgs.jq ];
-
-        # Metadata about this derivation
-        meta = {
-          description = "DepText statistics for ${name} ${version}";
-        };
-
-        # Pass through configuration for the persist mechanism
-        passthru = {
-          processorName = "stats";
-          # Stats persist by default (FR-018)
-          persist = config.persist or true;
-        };
       };
 }

@@ -17,8 +17,13 @@
 #   nursery/rust/serde/seed.nix
 #
 # And you run `nix build -f seed.nix`, the stats processor (with persist=true)
-# will have its output copied to:
+# will have its publish/ contents copied to:
 #   nursery/rust/serde/stats/stats.json
+#
+# SPECIAL CASE - FINALIZE:
+# The finalize processor is special. Instead of being placed in a finalize/
+# subdirectory, its publish/ contents (README.md and bloom.json) go directly
+# alongside seed.nix at the root level.
 #
 # IMPORTANT NOTE:
 # Nix builds are "pure" - they can't write to arbitrary filesystem locations
@@ -45,11 +50,12 @@
   #   name       - Package name (for derivation naming)
   #   version    - Package version
   #   processors - Attribute set of processor derivations
-  #                { package-download = <drv>; source-download = <drv>; stats = <drv>; }
+  #                { package-download = <drv>; source-download = <drv>; stats = <drv>; finalize = <drv>; }
   #
   # RETURNS:
   #   A derivation that, when built, contains all persisted outputs organized
-  #   by processor name (e.g., out/stats/stats.json)
+  #   by processor name (e.g., out/stats/stats.json) except for finalize which
+  #   goes to the root (e.g., out/README.md, out/bloom.json)
   mkPersistWrapper =
     { pkgs
     , name
@@ -71,6 +77,10 @@
       '';
 
       # INSTALL PHASE: Copy persisted outputs to organized directories
+      #
+      # For each processor with persist=true:
+      # - Regular processors: Copy publish/* to $out/{processor-name}/
+      # - Finalize processor: Copy publish/* to $out/ (root level)
       installPhase = ''
         mkdir -p $out
 
@@ -82,15 +92,26 @@
             # Check if this processor has persist=true in its passthru
             # Default to false if not set
             shouldPersist = procDrv.passthru.persist or false;
+            # Check if this is the finalize processor (special handling)
+            isFinalize = procName == "finalize";
           in
-          if shouldPersist then ''
-            echo "Persisting output from ${procName}..."
-            mkdir -p $out/${procName}
-            # Copy all files from the processor output
-            if [ -d "${procDrv}" ]; then
-              cp -r ${procDrv}/* $out/${procName}/ 2>/dev/null || true
-            fi
-          '' else ''
+          if shouldPersist then
+            if isFinalize then ''
+              # FINALIZE SPECIAL CASE: Copy to root level (no subfolder)
+              echo "Persisting finalize output to root level..."
+              if [ -d "${procDrv}/publish" ]; then
+                cp -r ${procDrv}/publish/* $out/ 2>/dev/null || true
+              fi
+            '' else ''
+              # REGULAR PROCESSOR: Copy publish/ contents to named subfolder
+              echo "Persisting output from ${procName}..."
+              mkdir -p $out/${procName}
+              # Copy all files from the processor's publish/ directory
+              if [ -d "${procDrv}/publish" ]; then
+                cp -r ${procDrv}/publish/* $out/${procName}/ 2>/dev/null || true
+              fi
+            ''
+          else ''
             echo "Skipping ${procName} (persist=false)"
           ''
         ) processors)}
@@ -153,6 +174,20 @@
       fi
 
       echo "Copying persisted outputs from $RESULT..."
+
+      # Copy files at root level (README.md, bloom.json from finalize)
+      for file in "$RESULT"/*; do
+        if [ -f "$file" ]; then
+          filename=$(basename "$file")
+          # Skip the metadata file
+          if [ "$filename" != ".deptext.json" ]; then
+            echo "  -> $filename"
+            cp "$file" "$SCRIPT_DIR/"
+          fi
+        fi
+      done
+
+      # Copy processor subdirectories
       for dir in "$RESULT"/*/; do
         if [ -d "$dir" ]; then
           dirname=$(basename "$dir")

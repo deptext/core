@@ -7,6 +7,7 @@
 # 1. package-download: Fetches the crate from crates.io, gets metadata
 # 2. source-download: Fetches source from GitHub, validates URL
 # 3. stats: Counts files and generates statistics
+# 4. finalize: Generates README.md and bloom.json summaries
 #
 # Each step is a separate Nix derivation. Nix automatically:
 # - Builds them in the correct order (respecting dependencies)
@@ -33,6 +34,7 @@ let
   packageDownloadRust = import ../processors/package-download/rust.nix { inherit lib; };
   sourceDownload = import ../processors/source-download.nix { inherit lib; };
   stats = import ../processors/stats.nix { inherit lib; };
+  finalize = import ../processors/finalize.nix { inherit lib; };
   persist = import ../utils/persist.nix { inherit lib; };
 in
 {
@@ -61,6 +63,7 @@ in
         package-download = { enabled = true; persist = false; };
         source-download = { enabled = true; persist = false; };
         stats = { enabled = true; persist = true; };  # stats persists by default
+        finalize = { enabled = true; persist = true; };  # finalize always persists
       } processors;
 
       # STEP 1: Package Download
@@ -89,11 +92,25 @@ in
         config = processorConfig.stats;
       };
 
-      # Collect all processor derivations
-      allProcessors = {
+      # Collect upstream processor derivations (for finalize to read)
+      upstreamProcessors = {
         package-download = packageDownloadDrv;
         source-download = sourceDownloadDrv;
         stats = statsDrv;
+      };
+
+      # STEP 4: Finalize
+      # Generates README.md and bloom.json after all other processors complete
+      finalizeDrv = finalize.mkFinalize {
+        inherit pkgs pname version github hash;
+        language = "rust";
+        processors = upstreamProcessors;
+        inherit processorConfig;
+      };
+
+      # Collect all processor derivations (including finalize)
+      allProcessors = upstreamProcessors // {
+        finalize = finalizeDrv;
       };
 
       # FINAL: Persist Wrapper
