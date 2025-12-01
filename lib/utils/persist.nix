@@ -84,6 +84,12 @@
       installPhase = ''
         mkdir -p $out
 
+        echo "========================================"
+        echo "PERSIST WRAPPER: Collecting outputs"
+        echo "========================================"
+        echo "Package: ${name} v${version}"
+        echo ""
+
         # For each processor, check if it should be persisted
         # We use passthru.persist which was set in each processor
 
@@ -98,21 +104,32 @@
           if shouldPersist then
             if isFinalize then ''
               # FINALIZE SPECIAL CASE: Copy to root level (no subfolder)
-              echo "Persisting finalize output to root level..."
+              echo "[persist] ${procName}: persist=true (root level)"
+              echo "  Source: ${procDrv}/publish"
               if [ -d "${procDrv}/publish" ]; then
+                echo "  Files in source:"
+                ls -la "${procDrv}/publish" 2>/dev/null || echo "    (empty or error)"
                 cp -r ${procDrv}/publish/* $out/ 2>/dev/null || true
+                echo "  Copied to: $out/"
+              else
+                echo "  WARNING: publish directory not found!"
               fi
             '' else ''
               # REGULAR PROCESSOR: Copy publish/ contents to named subfolder
-              echo "Persisting output from ${procName}..."
+              echo "[persist] ${procName}: persist=true"
+              echo "  Source: ${procDrv}/publish"
               mkdir -p $out/${procName}
-              # Copy all files from the processor's publish/ directory
               if [ -d "${procDrv}/publish" ]; then
+                echo "  Files in source:"
+                ls -la "${procDrv}/publish" 2>/dev/null || echo "    (empty or error)"
                 cp -r ${procDrv}/publish/* $out/${procName}/ 2>/dev/null || true
+                echo "  Copied to: $out/${procName}/"
+              else
+                echo "  WARNING: publish directory not found!"
               fi
             ''
           else ''
-            echo "Skipping ${procName} (persist=false)"
+            echo "[persist] ${procName}: persist=false (skipped)"
           ''
         ) processors)}
 
@@ -127,9 +144,16 @@
         }
         EOF
 
-        echo "Pipeline complete!"
-        echo "Persisted outputs:"
-        find $out -type f | head -20
+        echo ""
+        echo "========================================"
+        echo "FINAL OUTPUT STRUCTURE"
+        echo "========================================"
+        echo "Output directory: $out"
+        find $out -type f -o -type d | sort
+        echo ""
+        echo "Total files: $(find $out -type f | wc -l)"
+        echo "Total size: $(du -sh $out | cut -f1)"
+        echo "========================================"
       '';
 
       # Metadata

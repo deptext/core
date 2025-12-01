@@ -127,15 +127,23 @@ in
             }
 
           # Find and copy the generated JSON file
+          echo "Looking for JSON output in doc/..."
+          find doc -type f -name "*.json" 2>/dev/null || echo "  (no .json files found)"
+
           json_file=$(find doc -name "*.json" -type f | head -1)
 
           if [ -n "$json_file" ]; then
             cp "$json_file" $out/publish/${name}.json
-            echo "Rustdoc JSON generated: $(du -h $out/publish/${name}.json | cut -f1)"
+            echo "[rustdoc-json] SUCCESS"
+            echo "  Output: $out/publish/${name}.json"
+            echo "  Size: $(du -h $out/publish/${name}.json | cut -f1)"
           else
-            echo "Warning: No JSON output found, creating placeholder"
+            echo "[rustdoc-json] WARNING: No JSON output found, creating placeholder"
             echo '{"error": "no JSON output found", "format_version": 0}' > $out/publish/${name}.json
           fi
+
+          echo "[rustdoc-json] Final publish/ contents:"
+          ls -la $out/publish/
         '';
       };
 }

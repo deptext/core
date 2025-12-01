@@ -131,10 +131,13 @@ in
           # STEP 3: Report success
           # ─────────────────────────────────────────────────────────────────────
 
-          echo "Rustdoc Markdown generated successfully"
-          echo "  - Output: $out/publish/docs.md"
-          echo "  - Size: $(du -h $out/publish/docs.md | cut -f1)"
-          echo "  - Lines: $(wc -l < $out/publish/docs.md)"
+          echo "[rustdoc-md] SUCCESS"
+          echo "  Output: $out/publish/docs.md"
+          echo "  Size: $(du -h $out/publish/docs.md | cut -f1)"
+          echo "  Lines: $(wc -l < $out/publish/docs.md)"
+
+          echo "[rustdoc-md] Final publish/ contents:"
+          ls -la $out/publish/
         '';
       };
 }
