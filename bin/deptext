@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# DepText CLI - Build seeds with minimal boilerplate
+# DepText CLI - Bloom seeds with minimal boilerplate
 #
 # USAGE:
-#   deptext build <seed.nix> [nix-build-options...]
+#   deptext bloom <seed.nix> [nix-bloom-options...]
 #
 # EXAMPLES:
-#   deptext build ./seed.nix
-#   deptext build ./seed.nix --print-out-paths
-#   deptext build ./seed.nix -o ./result
+#   deptext bloom ./seed.nix
+#   deptext bloom ./seed.nix --print-out-paths
+#   deptext bloom ./seed.nix -o ./result
 
 set -euo pipefail
 
@@ -23,21 +23,21 @@ USAGE:
   deptext <command> [options]
 
 COMMANDS:
-  build <seed.nix>   Build a seed file
+  bloom <seed.nix>   Bloom a seed file
   help               Show this help message
 
 EXAMPLES:
-  deptext build ./seed.nix
-  deptext build ./seed.nix --print-out-paths
-  deptext build examples/rust/serde/seed.nix -o ./result
+  deptext bloom ./seed.nix
+  deptext bloom ./seed.nix --print-out-paths
+  deptext bloom examples/rust/serde/seed.nix -o ./result
 
 EOF
 }
 
-cmd_build() {
+cmd_bloom() {
   if [ $# -lt 1 ]; then
     echo "Error: Missing seed path" >&2
-    echo "Usage: deptext build <seed.nix> [nix-build-options...]" >&2
+    echo "Usage: deptext bloom <seed.nix> [nix-bloom-options...]" >&2
     exit 1
   fi
 
@@ -55,7 +55,7 @@ cmd_build() {
     exit 1
   fi
 
-  # Build the seed using eval-seed.nix wrapper
+  # Bloom the seed using eval-seed.nix wrapper
   nix build \
     --impure \
     --file "$DEPTEXT_ROOT/lib/eval-seed.nix" \
@@ -65,9 +65,9 @@ cmd_build() {
 
 # Main command dispatch
 case "${1:-help}" in
-  build)
+  bloom)
     shift
-    cmd_build "$@"
+    cmd_bloom "$@"
     ;;
   help|--help|-h)
     usage
