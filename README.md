@@ -31,6 +31,60 @@ Or via flake:
 nix run github:deptext/core#bloom -- ./seed.nix
 ```
 
+## GitHub Action
+
+Automatically process seed.nix files in pull requests. When a PR contains a seed.nix file, the action blooms it and commits the artifacts back to the PR.
+
+### Repository Setup
+
+Before using the action, configure your repository:
+
+1. **Enable GitHub Actions**
+   - Go to **Settings → Actions → General**
+   - Select "Allow all actions and reusable workflows"
+
+2. **Set Workflow Permissions**
+   - Go to **Settings → Actions → General → Workflow permissions**
+   - Select **"Read and write permissions"**
+   - Check **"Allow GitHub Actions to create and approve pull requests"**
+
+### Add the Workflow
+
+Create `.github/workflows/bloom.yml` in your repository:
+
+```yaml
+name: DepText Bloom
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/seed.nix'
+
+permissions:
+  contents: write
+
+jobs:
+  bloom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: deptext/core@main
+```
+
+> **Note**: Use `@main` for latest, or pin to a specific tag (e.g., `@v1`) when available.
+
+### How It Works
+
+1. PR with seed.nix file is opened
+2. Action detects the seed.nix in changed files
+3. Nix is installed and `./bin/bloom` runs on the seed
+4. Generated artifacts (stats/, .deptext.json) are committed back to the PR
+
+### Limitations
+
+- Processes exactly one seed.nix per PR (fails if multiple seeds detected)
+- Fork PRs cannot receive commits due to GitHub security restrictions (run bloom locally instead)
+
 ## Supported Languages
 
 - **Rust** - `mkRustPackage` (crates.io + GitHub)
