@@ -13,10 +13,10 @@ This guide explains how to use the new rustdoc processors to generate markdown d
 
 ### Default Behavior (Documentation Enabled)
 
-After this feature is implemented, running bloom on a Rust seed automatically generates markdown documentation:
+After this feature is implemented, building a Rust seed automatically generates markdown documentation:
 
 ```bash
-./bin/bloom examples/rust/serde/seed.nix
+nix build --impure -f lib/eval-seed.nix --argstr seedPath "$PWD/examples/rust/serde/seed.nix"
 ```
 
 **Output includes:**
@@ -218,7 +218,7 @@ deptext.mkRustPackage {
 ./tests/integration/test-rust-seed.sh
 
 # Build example and inspect output
-./bin/bloom examples/rust/serde/seed.nix
+nix build --impure -f lib/eval-seed.nix --argstr seedPath "$PWD/examples/rust/serde/seed.nix"
 ls -la result/rustdoc-md/
 cat result/rustdoc-md/docs.md | head -100
 ```

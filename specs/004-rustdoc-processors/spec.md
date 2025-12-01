@@ -2,8 +2,10 @@
 
 **Feature Branch**: `004-rustdoc-processors`
 **Created**: 2025-12-01
-**Status**: Draft
+**Status**: Implemented
 **Input**: User description: "create a `rustdoc-json` processor for rust which generates the crates documentation as markdown and outputs the documentation without persisting it, then create a `rustdoc-md` processor which depends on the rustdoc-json processor, and uses the `cargo-doc-md` crate to convert the json docs into markdown, this processor should persist its output"
+
+> **Implementation Note**: Uses `rustdoc` directly with `RUSTC_BOOTSTRAP=1` for JSON output (no nightly toolchain required). The `rustdoc-md` crate converts JSON to Markdown.
 
 ## Clarifications
 

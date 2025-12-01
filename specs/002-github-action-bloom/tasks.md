@@ -2,6 +2,9 @@
 
 **Input**: Design documents from `/specs/002-github-action-bloom/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, quickstart.md
+**Status**: Implemented
+
+> **Note**: This task list was written during initial design. Implementation now uses `nix build --json` directly instead of `./bin/bloom`. The CLI was removed.
 
 **Tests**: Not explicitly requested - manual PR-based testing per plan.md
 

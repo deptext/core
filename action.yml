@@ -59,22 +59,21 @@ runs:
     # This runs our custom bash script that:
     # 1. Detects which seed.nix files changed in the PR
     # 2. Validates exactly one seed exists (or skips/fails appropriately)
-    # 3. Runs `./bin/bloom` to process the seed
+    # 3. Runs `nix build` to process the seed
     # 4. Commits and pushes the generated artifacts back to the PR
     #
     # ${{ github.action_path }} is a special variable that points to the
     # directory where THIS action is located (deptext/core repo root).
-    # This lets us call our `bin/bloom` tool from the action.
+    # This lets us find lib/eval-seed.nix for building seeds.
     - name: Detect and bloom seed.nix
       shell: bash
       run: |
         # Make the script executable (git doesn't always preserve permissions)
         chmod +x "${{ github.action_path }}/action/bloom.sh"
-        # Run the bloom script, passing the action path so it can find bin/bloom
+        # Run the bloom script, passing the action path so it can find lib/
         "${{ github.action_path }}/action/bloom.sh"
       env:
-        # Pass the action's location so bloom.sh can find the deptext tooling
-        # (bin/bloom lives in the action repository, not the consumer's repo)
+        # Pass the action's location so bloom.sh can find lib/eval-seed.nix
         ACTION_PATH: ${{ github.action_path }}
         # GITHUB_TOKEN is automatically provided by the workflow runner
         # It's used by `gh` CLI for API calls (listing PR files)

@@ -42,7 +42,7 @@ handle_push_failure() {
         log_error "GitHub security restrictions prevent pushing commits to fork branches."
         log_error "To add bloom artifacts, please run locally:"
         log_error ""
-        log_error "  ./bin/bloom path/to/seed.nix"
+        log_error "  nix build --impure -f lib/eval-seed.nix --argstr seedPath \$PWD/path/to/seed.nix"
         log_error "  cp -r result/* path/to/seed-directory/"
         log_error "  git add . && git commit -m 'chore: add bloom artifacts'"
         log_error "  git push"

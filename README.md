@@ -23,12 +23,7 @@ deptext.mkRustPackage {
 
 Build with:
 ```bash
-./bin/bloom examples/rust/serde/seed.nix
-```
-
-Or via flake:
-```bash
-nix run github:deptext/core#bloom -- ./seed.nix
+nix build --impure -f lib/eval-seed.nix --argstr seedPath "$PWD/examples/rust/serde/seed.nix"
 ```
 
 ## GitHub Action
@@ -77,8 +72,8 @@ jobs:
 
 1. PR with seed.nix file is opened
 2. Action detects the seed.nix in changed files
-3. Nix is installed and `./bin/bloom` runs on the seed
-4. Generated artifacts (stats/, .deptext.json) are committed back to the PR
+3. Nix is installed and the seed is built
+4. Generated artifacts (stats/, rustdoc-md/, README.md, bloom.json) are committed back to the PR
 
 ### Limitations
 
@@ -97,6 +92,8 @@ jobs:
 | `package-download` | Fetches from package registry | `false` |
 | `source-download` | Fetches from GitHub | `false` |
 | `stats` | Generates file statistics | `true` |
+| `rustdoc-json` | Generates rustdoc JSON (Rust only) | `false` |
+| `rustdoc-md` | Converts rustdoc to Markdown (Rust only) | `true` |
 
 ## Custom Configuration
 

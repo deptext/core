@@ -3,6 +3,8 @@
 **Date**: 2025-12-01
 **Feature**: 002-github-action-bloom
 
+> **Note**: This research doc was written during initial design. Implementation uses `nix build --json` directly instead of `./bin/bloom`.
+
 ## Research Topics
 
 ### 1. GitHub Composite Actions Best Practices

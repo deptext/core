@@ -3,6 +3,8 @@
 **Date**: 2025-12-01
 **Feature**: 002-github-action-bloom
 
+> **Note**: This quickstart was written during initial design. References to `./bin/bloom` below are outdated. Use `nix build --impure -f lib/eval-seed.nix --argstr seedPath $PWD/path/to/seed.nix` for local builds.
+
 ## For Consumers (Using the Action)
 
 ### 1. Create Workflow File

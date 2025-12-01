@@ -2,7 +2,10 @@
 
 **Feature Branch**: `002-github-action-bloom`
 **Created**: 2025-12-01
-**Status**: Draft
+**Status**: Implemented
+
+> **Note**: This spec was written during initial design. Implementation now uses `nix build --json` directly instead of the `./bin/bloom` CLI wrapper mentioned below. The CLI was removed in favor of using Nix directly for cleaner, more reliable operation.
+
 **Input**: User description: "Turn this project into a custom GitHub Action (with an action.yml file). When added to a repo, the action should run on pull requests containing seed.nix files. The action should first confirm that there is one and only one file in the pull request (a single seed.nix file). Then the action should execute the ./bin/bloom for the seed file. Once the bloom has completed, move the resulting artifacts next to the seed file and commit the changes (updating the pull request)."
 
 ## Clarifications

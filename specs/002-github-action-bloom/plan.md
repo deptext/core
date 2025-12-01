@@ -3,9 +3,11 @@
 **Branch**: `002-github-action-bloom` | **Date**: 2025-12-01 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/002-github-action-bloom/spec.md`
 
+> **Note**: This plan was written during initial design. Implementation now uses `nix build --json` directly instead of `./bin/bloom`. See the actual implementation in `action/lib/process.sh`.
+
 ## Summary
 
-Create a reusable GitHub composite action that automatically processes ("blooms") seed.nix files in pull requests. The action validates that exactly one seed.nix file exists in the PR, installs Nix with flakes, runs `./bin/bloom`, and commits the resulting artifacts back to the PR branch. Consumers reference it via `uses: deptext/core@v1`.
+Create a reusable GitHub composite action that automatically processes ("blooms") seed.nix files in pull requests. The action validates that exactly one seed.nix file exists in the PR, installs Nix with flakes, builds the seed, and commits the resulting artifacts back to the PR branch. Consumers reference it via `uses: deptext/core@main`.
 
 ## Technical Context
 

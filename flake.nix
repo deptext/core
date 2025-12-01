@@ -74,32 +74,11 @@
           ];
         };
 
-        # CLI APP: The bloom command-line tool
-        # Run with: nix run .#bloom -- ./seed.nix
-        # Or install: nix profile install .#bloom
-        packages.bloom = pkgs.stdenv.mkDerivation {
-          pname = "bloom";
-          version = "0.1.0";
-          src = self;
-          installPhase = ''
-            mkdir -p $out/bin $out/lib
-            cp -r lib/* $out/lib/
-            cp bin/bloom $out/bin/
-            # Patch the script to use the installed lib path
-            substituteInPlace $out/bin/bloom \
-              --replace 'PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"' \
-                        'PROJECT_ROOT="'"$out"'"'
-          '';
-        };
-
-        packages.default = self.packages.${system}.bloom;
-
-        apps.bloom = {
-          type = "app";
-          program = "${self.packages.${system}.bloom}/bin/bloom";
-        };
-
-        apps.default = self.apps.${system}.bloom;
+        # Default package just exports the lib directory for reference
+        packages.default = pkgs.runCommand "deptext-lib" {} ''
+          mkdir -p $out
+          cp -r ${self}/lib/* $out/
+        '';
       }
     );
 }

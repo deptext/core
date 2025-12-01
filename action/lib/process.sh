@@ -25,18 +25,42 @@ get_seed_directory() {
 #
 # Returns: The Nix store path of the build output (via stdout)
 #
-# The bloom tool reads the seed.nix, downloads the package, analyzes it,
-# and outputs results to the Nix store. We use --no-link to avoid creating
-# a "result" symlink (which would get accidentally committed to git).
+# Uses `nix build --json` which outputs structured JSON containing the store
+# paths. This is the recommended Nix way to programmatically get build outputs,
+# rather than parsing human-readable log messages.
 #
 # Requires: ACTION_PATH environment variable pointing to deptext/core repo
 run_bloom() {
     local seed_path="$1"
+    local seed_dir
+    seed_dir=$(dirname "$seed_path")
+    local seed_abs_path
+    seed_abs_path=$(cd "$seed_dir" && pwd)/$(basename "$seed_path")
+
     log "Running bloom on $seed_path..."
-    # Use --no-link to prevent creating a "result" symlink in the working directory
-    # Use --print-out-paths to get the store path on stdout
+
+    # Use nix build --json to get structured output
+    # The JSON contains: [{"outputs":{"out":"/nix/store/..."}}]
+    local build_json
+    build_json=$(nix build \
+        --impure \
+        --no-link \
+        --json \
+        --file "$ACTION_PATH/lib/eval-seed.nix" \
+        --argstr seedPath "$seed_abs_path" \
+        2>&1)
+
+    # Extract the store path from JSON using jq
     local store_path
-    store_path=$("$ACTION_PATH/bin/bloom" "$seed_path" --no-link --print-out-paths)
+    store_path=$(echo "$build_json" | jq -r '.[0].outputs.out // empty' 2>/dev/null)
+
+    if [[ -z "$store_path" ]]; then
+        log "Build output:"
+        echo "$build_json"
+        log "ERROR: Could not extract store path from build output"
+        return 1
+    fi
+
     log_success "Bloom completed: $store_path"
     echo "$store_path"
 }
@@ -52,24 +76,41 @@ run_bloom() {
 copy_artifacts() {
     local store_path="$1"
     local seed_dir="$2"
-    log "Copying artifacts to $seed_dir..."
+    log "Copying artifacts from $store_path to $seed_dir..."
 
-    # Check if store path exists and has contents
-    if [[ ! -d "$store_path" ]] || [[ -z "$(ls -A "$store_path" 2>/dev/null)" ]]; then
-        log "No artifacts produced by bloom"
+    # Check if store path exists
+    if [[ ! -d "$store_path" ]]; then
+        log "ERROR: Store path does not exist: $store_path"
+        return 1
+    fi
+
+    # List contents for debugging
+    log "Store path contents:"
+    ls -la "$store_path" 2>&1 | while read -r line; do log "  $line"; done
+
+    # Check if store path has contents
+    if [[ -z "$(ls -A "$store_path" 2>/dev/null)" ]]; then
+        log "WARNING: Store path is empty"
         return 0
     fi
 
     # Copy all files, dereferencing symlinks
+    local copied=0
     for item in "$store_path"/*; do
         if [[ -e "$item" ]]; then
             local name
             name=$(basename "$item")
+            log "  Copying: $name"
             cp -rL "$item" "$seed_dir/$name"
+            ((copied++))
         fi
     done
 
-    log_success "Artifacts copied to $seed_dir"
+    log_success "Copied $copied items to $seed_dir"
+
+    # Show what was copied
+    log "Seed directory contents after copy:"
+    ls -la "$seed_dir" 2>&1 | while read -r line; do log "  $line"; done
 }
 
 # process_seed() - Run bloom and copy artifacts for a seed

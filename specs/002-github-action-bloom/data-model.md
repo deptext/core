@@ -3,6 +3,8 @@
 **Date**: 2025-12-01
 **Feature**: 002-github-action-bloom
 
+> **Note**: This data model was written during initial design. References to `./bin/bloom` are outdated - implementation uses `nix build --json` directly.
+
 ## Overview
 
 This feature primarily deals with GitHub Actions workflow data and file system artifacts. No database or persistent storage is involved. The "data model" describes the structure of inputs, outputs, and state transitions during action execution.

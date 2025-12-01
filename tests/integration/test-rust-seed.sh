@@ -5,11 +5,11 @@
 # It builds the serde example seed and verifies the output.
 #
 # WHAT THIS TEST VALIDATES:
-# 1. The bloom CLI works correctly
-# 2. mkRustPackage creates a valid derivation
-# 3. The package-download processor fetches from crates.io
-# 4. The source-download processor fetches from GitHub
-# 5. The stats processor generates valid JSON output
+# 1. mkRustPackage creates a valid derivation
+# 2. The package-download processor fetches from crates.io
+# 3. The source-download processor fetches from GitHub
+# 4. The stats processor generates valid JSON output
+# 5. The rustdoc processors generate documentation
 # 6. Persisted outputs are in the expected location
 #
 # USAGE:
@@ -38,7 +38,6 @@ log_fail() { echo -e "${RED}[FAIL]${NC} $1"; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 EXAMPLE_DIR="$REPO_ROOT/examples/rust/serde"
-BLOOM="$REPO_ROOT/bin/bloom"
 
 log_info "Running Rust seed integration test"
 log_info "Repository root: $REPO_ROOT"
@@ -53,29 +52,31 @@ else
   exit 1
 fi
 
-# Test 2: Build the seed using bloom CLI
+# Test 2: Build the seed using nix build --json
 log_info "Test 2: Building the seed (this may take a while)..."
-cd "$EXAMPLE_DIR"
 
-# Clean up any previous result
-rm -f result
-
-# Build the seed using the CLI
-if "$BLOOM" seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
-  log_success "Build succeeded!"
-  cat build_stderr.txt
-else
+# Capture stdout (JSON) only, let stderr go to terminal for progress
+if ! BUILD_JSON=$(nix build \
+  --impure \
+  --no-link \
+  --json \
+  --file "$REPO_ROOT/lib/eval-seed.nix" \
+  --argstr seedPath "$EXAMPLE_DIR/seed.nix" \
+  2>/dev/null); then
   log_fail "Build failed!"
-  cat build_stderr.txt
-  cat build_output.txt
-  rm -f build_output.txt build_stderr.txt
   exit 1
 fi
 
-# The store path is the line starting with /nix/store in stdout
-# We need to strip ANSI color codes and find the Nix store path
-STORE_PATH=$(grep -E "^/nix/store/" build_output.txt | head -1)
-rm -f build_output.txt build_stderr.txt
+log_success "Build succeeded!"
+
+# Extract store path from JSON
+STORE_PATH=$(echo "$BUILD_JSON" | jq -r '.[0].outputs.out')
+if [[ -z "$STORE_PATH" || "$STORE_PATH" == "null" ]]; then
+  log_fail "Could not extract store path from build output"
+  echo "$BUILD_JSON"
+  exit 1
+fi
+
 log_info "Build output: $STORE_PATH"
 
 # Test 3: Verify stats.json exists
@@ -248,12 +249,17 @@ CUSTOM_EXAMPLE_DIR="$REPO_ROOT/examples/rust/serde-custom"
 
 if [ -f "$CUSTOM_EXAMPLE_DIR/seed.nix" ]; then
   log_info "Building custom configuration seed..."
-  cd "$CUSTOM_EXAMPLE_DIR"
-  rm -f result
 
-  if "$BLOOM" seed.nix --no-link --print-out-paths 2>build_stderr.txt >build_output.txt; then
-    cat build_stderr.txt
-    CUSTOM_BUILD_OUTPUT=$(tail -1 build_output.txt)
+  # Capture stdout (JSON) and stderr separately
+  if CUSTOM_BUILD_JSON=$(nix build \
+    --impure \
+    --no-link \
+    --json \
+    --file "$REPO_ROOT/lib/eval-seed.nix" \
+    --argstr seedPath "$CUSTOM_EXAMPLE_DIR/seed.nix" \
+    2>/dev/null); then
+
+    CUSTOM_BUILD_OUTPUT=$(echo "$CUSTOM_BUILD_JSON" | jq -r '.[0].outputs.out')
     log_success "Custom seed build succeeded!"
 
     # Verify that package-download is now persisted (has persist=true in custom config)
@@ -272,13 +278,8 @@ if [ -f "$CUSTOM_EXAMPLE_DIR/seed.nix" ]; then
     else
       log_warn "stats.json missing in custom build"
     fi
-
-    rm -f build_output.txt build_stderr.txt
   else
-    log_warn "Custom seed build failed (non-critical):"
-    cat build_stderr.txt
-    cat build_output.txt
-    rm -f build_output.txt build_stderr.txt
+    log_warn "Custom seed build failed (non-critical)"
   fi
 else
   log_warn "Custom example seed not found at $CUSTOM_EXAMPLE_DIR/seed.nix"
