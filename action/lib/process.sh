@@ -37,12 +37,20 @@ run_bloom() {
     log "Running bloom on $seed_path..."
 
     # Build the seed, creating a 'result' symlink in the seed directory
-    # Progress output goes to terminal (stderr), result symlink is our output
-    if ! nix build \
-        --impure \
-        --out-link "$seed_dir/result" \
-        --file "$ACTION_PATH/lib/eval-seed.nix" \
-        --argstr seedPath "$seed_abs_path"; then
+    # If ACTIONS_RUNNER_DEBUG is true, pass -L to stream build logs
+    local nix_args=(
+        --impure
+        --out-link "$seed_dir/result"
+        --file "$ACTION_PATH/lib/eval-seed.nix"
+        --argstr seedPath "$seed_abs_path"
+    )
+
+    if [[ "${ACTIONS_RUNNER_DEBUG:-}" == "true" ]]; then
+        log "Debug mode: streaming build logs"
+        nix_args+=(-L)
+    fi
+
+    if ! nix build "${nix_args[@]}"; then
         log "ERROR: nix build failed"
         return 1
     fi
