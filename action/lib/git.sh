@@ -56,6 +56,27 @@ handle_push_failure() {
     fi
 }
 
+# report_status() - Report a commit status via GitHub API
+#
+# Arguments:
+#   $1 = Commit SHA to report status for
+#
+# Reports a success status so branch protection is satisfied on the new commit.
+report_status() {
+    local commit_sha="$1"
+    local repo="${GITHUB_REPOSITORY}"
+
+    log "Reporting status for commit $commit_sha..."
+
+    gh api "repos/${repo}/statuses/${commit_sha}" \
+        -f state="success" \
+        -f context="bloom" \
+        -f description="Bloom artifacts committed" \
+        --silent
+
+    log_success "Status reported"
+}
+
 # commit_and_push() - Stage, commit, and push artifact changes
 #
 # Arguments:
@@ -80,6 +101,11 @@ commit_and_push() {
         handle_push_failure
         exit 1
     fi
+
+    # Report status to the new commit so branch protection is satisfied
+    local new_commit_sha
+    new_commit_sha=$(git rev-parse HEAD)
+    report_status "$new_commit_sha"
 
     log_success "Artifacts committed and pushed"
 }
