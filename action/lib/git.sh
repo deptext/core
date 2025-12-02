@@ -96,15 +96,17 @@ commit_and_push() {
     git add "$seed_dir"
     git commit -m "chore: bloom artifacts for $seed_path"
 
+    # Capture commit SHA before pushing (avoid race condition)
+    local new_commit_sha
+    new_commit_sha=$(git rev-parse HEAD)
+
     log "Pushing to branch..."
     if ! git push; then
         handle_push_failure
         exit 1
     fi
 
-    # Report status to the new commit so branch protection is satisfied
-    local new_commit_sha
-    new_commit_sha=$(git rev-parse HEAD)
+    # Report status to our commit so branch protection is satisfied
     report_status "$new_commit_sha"
 
     log_success "Artifacts committed and pushed"
