@@ -18,9 +18,10 @@ check_for_changes() {
 # configure_git() - Set up git identity for commits
 #
 # Configures the github-actions bot as the commit author.
+# Using the numeric ID email makes commits "Verified" when pushed with GITHUB_TOKEN.
 configure_git() {
     git config user.name "github-actions[bot]"
-    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 }
 
 # handle_push_failure() - Provide helpful message when push fails
