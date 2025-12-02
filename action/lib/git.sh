@@ -70,7 +70,7 @@ report_status() {
 
     gh api "repos/${repo}/statuses/${commit_sha}" \
         -f state="success" \
-        -f context="bloom" \
+        -f context="bloom-complete" \
         -f description="Bloom artifacts committed" \
         --silent
 
